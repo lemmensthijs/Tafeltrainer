@@ -49,14 +49,14 @@
       justify-content: center;
       padding: 20px;
       box-sizing: border-box;
+      position: relative; /* nodig voor absolute positie zandloper */
     }
 
-    /* Som en zandloper naast elkaar */
+    /* Som in een rij (zonder zandloper) */
     .question-row {
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 40px;
       margin-bottom: 20px;
     }
 
@@ -69,10 +69,15 @@
       font-size: 10rem;
     }
 
+    /* Grote zandloper, rechts tussen antwoorden en menu */
     .hourglass-container {
-      width: 80px;
-      height: 180px;
-      display: none;
+      position: absolute;
+      right: 320px;         /* tussen hoofdgebied en menu van 290px */
+      top: 60%;             /* ongeveer ter hoogte van de antwoorden */
+      transform: translateY(-50%);
+      width: 160px;         /* 2x zo groot */
+      height: 360px;        /* 2x zo groot */
+      display: none;        /* alleen tonen bij tijdsdruk */
     }
 
     .hourglass-svg {
@@ -361,38 +366,6 @@
 
       <div class="question-row">
         <div class="question" id="questionDisplay">3 × 4 =</div>
-
-        <div class="hourglass-container" id="hourglassContainer">
-          <svg id="hourglassSvg" class="hourglass-svg" viewBox="0 0 80 180">
-            <defs>
-              <clipPath id="topClip">
-                <polygon points="10,10 70,10 40,90" />
-              </clipPath>
-              <clipPath id="bottomClip">
-                <polygon points="10,170 70,170 40,90" />
-              </clipPath>
-            </defs>
-
-            <!-- Frame -->
-            <g stroke="#555" stroke-width="3" fill="none">
-              <rect x="15" y="5" width="50" height="10" rx="3" ry="3" fill="#ddd" />
-              <rect x="15" y="165" width="50" height="10" rx="3" ry="3" fill="#ddd" />
-              <line x1="20" y1="15" x2="35" y2="75" />
-              <line x1="60" y1="15" x2="45" y2="75" />
-              <line x1="35" y1="105" x2="20" y2="165" />
-              <line x1="45" y1="105" x2="60" y2="165" />
-              <line x1="35" y1="90" x2="45" y2="90" />
-            </g>
-
-            <!-- Zand boven -->
-            <rect id="topSand" x="10" y="10" width="60" height="80"
-                  clip-path="url(#topClip)" fill="#e0c070" />
-
-            <!-- Zand onder -->
-            <rect id="bottomSand" x="10" y="170" width="60" height="0"
-                  clip-path="url(#bottomClip)" fill="#e0c070" />
-          </svg>
-        </div>
       </div>
 
       <div class="timer" id="timerContainer" style="display: none;">
@@ -416,6 +389,39 @@
 
       <button id="nextQuestionButton" class="next-button" style="display: none;">Volgende som</button>
       <button id="finishButton" class="primary-button" type="button" style="margin-top: 10px;">Klaar</button>
+
+      <!-- Grote zandloper rechts, tussen antwoorden en menu -->
+      <div class="hourglass-container" id="hourglassContainer">
+        <svg id="hourglassSvg" class="hourglass-svg" viewBox="0 0 80 180">
+          <defs>
+            <clipPath id="topClip">
+              <polygon points="10,10 70,10 40,90" />
+            </clipPath>
+            <clipPath id="bottomClip">
+              <polygon points="10,170 70,170 40,90" />
+            </clipPath>
+          </defs>
+
+          <!-- Frame -->
+          <g stroke="#555" stroke-width="3" fill="none">
+            <rect x="15" y="5" width="50" height="10" rx="3" ry="3" fill="#ddd" />
+            <rect x="15" y="165" width="50" height="10" rx="3" ry="3" fill="#ddd" />
+            <line x1="20" y1="15" x2="35" y2="75" />
+            <line x1="60" y1="15" x2="45" y2="75" />
+            <line x1="35" y1="105" x2="20" y2="165" />
+            <line x1="45" y1="105" x2="60" y2="165" />
+            <line x1="35" y1="90" x2="45" y2="90" />
+          </g>
+
+          <!-- Zand boven -->
+          <rect id="topSand" x="10" y="10" width="60" height="80"
+                clip-path="url(#topClip)" fill="#e0c070" />
+
+          <!-- Zand onder -->
+          <rect id="bottomSand" x="10" y="170" width="60" height="0"
+                clip-path="url(#bottomClip)" fill="#e0c070" />
+        </svg>
+      </div>
     </div>
 
     <div class="menu">
@@ -616,8 +622,9 @@
     let currentFactor = 1;
     let currentAnswer = 0;
     let currentQuestionType = 'multiple';
-    let timerId = null;
-    let timeRemaining = 0;
+
+    let timerId = null;          // requestAnimationFrame id
+    let currentTimeLimit = 5;    // seconden
     let questionActive = false;
 
     let orderMode = 'random';
@@ -632,8 +639,6 @@
 
     let firstAnswerGiven = false;
     let firstAnswerCorrect = false;
-
-    let currentTimeLimit = 5;
 
     function arraysEqual(a, b) {
       if (a.length !== b.length) return false;
@@ -713,7 +718,7 @@
 
     function clearTimer() {
       if (timerId !== null) {
-        clearInterval(timerId);
+        cancelAnimationFrame(timerId);
         timerId = null;
       }
     }
@@ -758,28 +763,43 @@
 
       timerContainer.style.display = 'block';
       currentTimeLimit = getTimeLimit();
-      timeRemaining = currentTimeLimit;
-      timeRemainingSpan.textContent = timeRemaining;
+      let startTimeMs = null;
+      const durationMs = currentTimeLimit * 1000;
 
       hourglassContainer.style.display = 'block';
       updateHourglass(1);
       flipHourglass();
 
-      timerId = setInterval(() => {
-        timeRemaining -= 1;
-        if (timeRemaining < 0) {
-          timeRemaining = 0;
+      function tick(timestamp) {
+        if (!questionActive) {
+          timerId = null;
+          return;
         }
-        timeRemainingSpan.textContent = timeRemaining;
 
-        const fraction = currentTimeLimit > 0 ? timeRemaining / currentTimeLimit : 0;
+        if (!startTimeMs) {
+          startTimeMs = timestamp;
+        }
+
+        const elapsed = timestamp - startTimeMs;
+        let remaining = (durationMs - elapsed) / 1000;
+
+        if (remaining <= 0) {
+          remaining = 0;
+          timeRemainingSpan.textContent = '0';
+          updateHourglass(0);
+          timerId = null;
+          handleTimeUp();
+          return;
+        }
+
+        timeRemainingSpan.textContent = String(Math.ceil(remaining));
+        const fraction = remaining / currentTimeLimit;
         updateHourglass(fraction);
 
-        if (timeRemaining <= 0) {
-          clearTimer();
-          handleTimeUp();
-        }
-      }, 1000);
+        timerId = requestAnimationFrame(tick);
+      }
+
+      timerId = requestAnimationFrame(tick);
     }
 
     function setQuestionActive(active) {
@@ -1263,25 +1283,6 @@
       });
 
       exportCsvButton.addEventListener('click', exportCsv);
-    }
-
-    function initThemeSwitcher() {
-      const themeRadios = document.querySelectorAll('input[name="theme"]');
-      themeRadios.forEach(r => {
-        r.addEventListener('change', () => {
-          if (r.checked) {
-            if (r.value === 'light') {
-              document.body.className = 'theme-light';
-            } else if (r.value === 'dark') {
-              document.body.className = 'theme-dark';
-            } else if (r.value === 'dim') {
-              document.body.className = 'theme-dim';
-            } else if (r.value === 'calm') {
-              document.body.className = 'theme-calm';
-            }
-          }
-        });
-      });
     }
 
     // Init
