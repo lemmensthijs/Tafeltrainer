@@ -24,9 +24,22 @@
       color: #f3f3f3;
     }
 
+    .header {
+      text-align: center;
+      font-size: 2rem;
+      font-weight: bold;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(0,0,0,0.1);
+    }
+
+    body.theme-dark .header,
+    body.theme-dim .header {
+      border-bottom: 1px solid rgba(255,255,255,0.2);
+    }
+
     .app-container {
       display: flex;
-      min-height: 100vh;
+      min-height: calc(100vh - 60px);
     }
 
     .main-area {
@@ -178,7 +191,6 @@
       text-decoration: underline;
     }
 
-    /* Uitleg overlay */
     .overlay {
       position: fixed;
       inset: 0;
@@ -206,11 +218,11 @@
     .overlay-content button {
       margin-top: 10px;
     }
-
-    /* Zorg dat overlay tekst altijd leesbaar is, onafhankelijk van thema */
   </style>
 </head>
 <body class="theme-light">
+  <div class="header">Tafeltrainer</div>
+
   <div class="app-container">
     <div class="main-area">
       <div class="question" id="questionDisplay">3 × 4 =</div>
@@ -293,7 +305,6 @@
     </div>
   </div>
 
-  <!-- Uitleg overlay -->
   <div class="overlay" id="helpOverlay">
     <div class="overlay-content">
       <h2>Uitleg tafeltrainer</h2>
@@ -305,7 +316,7 @@
         <li><strong>Kies tafels</strong>: vink aan met welke tafels je wilt oefenen. Met de optie <em>Alle tafels</em> oefen je alles door elkaar.</li>
         <li><strong>Vraagtype</strong>:
           <ul>
-            <li><em>Meerkeuze</em>: je ziet vier antwoordknoppen, waarvan er één goed is.</li>
+            <li><em>Meerkeuze</em>: je ziet vier antwoordknoppen waarvan er één goed is.</li>
             <li><em>Open vraag</em>: je typt zelf het antwoord in het vak en bevestigt met OK of Enter.</li>
           </ul>
         </li>
@@ -348,14 +359,17 @@
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.value = String(table);
-        checkbox.checked = true;
+        checkbox.checked = false; // basis: alle losse tafels uit
+
         checkbox.addEventListener('change', () => {
-          // Als specifieke tafels worden aangepast, hoeft Alle tafels niet automatisch uit of aan.
-          // Logica bij selectie van tafels gebeurt in getSelectedTables.
+          // Als een specifieke tafel wordt aangevinkt, gaat het vinkje bij Alle tafels uit
+          if (checkbox.checked) {
+            allTablesCheckbox.checked = false;
+          }
         });
 
         label.appendChild(checkbox);
-        label.appendChild(document.createTextNode(' Tafel van ' + table));
+        label.appendChild(document.createTextNode(' ' + table));
         tablesList.appendChild(label);
       });
     }
@@ -423,7 +437,6 @@
 
     function setQuestionActive(active) {
       questionActive = active;
-      // Schakel invoer in of uit
       const buttons = multipleChoiceContainer.querySelectorAll('button');
       buttons.forEach(btn => {
         btn.disabled = !active;
@@ -474,7 +487,7 @@
       }
 
       const answers = Array.from(answersSet);
-      for (let i = answers.length - 1; i > 0; i--) {
+      for (let i = answers.length - 1; i > 0; i++) {
         const j = Math.floor(Math.random() * (i + 1));
         const temp = answers[i];
         answers[i] = answers[j];
@@ -536,7 +549,6 @@
       nextQuestionButton.style.display = 'inline-block';
     }
 
-    // Thema wisselen
     function initThemeSwitcher() {
       const themeRadios = document.querySelectorAll('input[name="theme"]');
       themeRadios.forEach(r => {
@@ -554,7 +566,6 @@
       });
     }
 
-    // Uitleg overlay
     function initHelpOverlay() {
       helpButton.addEventListener('click', () => {
         helpOverlay.style.display = 'flex';
@@ -570,7 +581,6 @@
     }
 
     function initEvents() {
-      // Type wisselen
       const typeRadios = document.querySelectorAll('input[name="questionType"]');
       typeRadios.forEach(r => {
         r.addEventListener('change', () => {
@@ -578,7 +588,6 @@
         });
       });
 
-      // Tijd aanpassen
       timeLimitInput.addEventListener('change', () => {
         getTimeLimit();
       });
@@ -598,6 +607,13 @@
       });
 
       allTablesCheckbox.addEventListener('change', () => {
+        if (allTablesCheckbox.checked) {
+          // Als Alle tafels wordt aangevinkt, gaan alle losse tafels uit
+          const checkboxes = tablesList.querySelectorAll('input[type="checkbox"]');
+          checkboxes.forEach(cb => {
+            cb.checked = false;
+          });
+        }
         generateNewQuestion();
       });
 
