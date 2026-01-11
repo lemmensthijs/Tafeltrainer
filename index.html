@@ -31,20 +31,14 @@
 
     .header {
       text-align: center;
-      font-size: 2rem;
+      font-size: 3.5rem; /* groter gemaakt */
       font-weight: bold;
-      padding: 12px 0;
-      border-bottom: 1px solid rgba(0,0,0,0.1);
-    }
-
-    body.theme-dark .header,
-    body.theme-dim .header {
-      border-bottom: 1px solid rgba(255,255,255,0.2);
+      margin-bottom: 10px;
     }
 
     .app-container {
       display: flex;
-      min-height: calc(100vh - 60px);
+      min-height: 100vh; /* geen ruimte meer reserveren voor een bovenbalk */
     }
 
     .main-area {
@@ -58,13 +52,13 @@
     }
 
     .question {
-      font-size: 4rem;
+      font-size: 8rem;  /* circa twee keer zo groot als eerder */
       margin-bottom: 20px;
       text-align: center;
     }
 
     body.font-large .question {
-      font-size: 5rem;
+      font-size: 10rem;
     }
 
     .timer {
@@ -127,8 +121,8 @@
       border-radius: 6px;
       border: 1px solid #888;
       cursor: pointer;
-      background-color: #ffffff;  /* altijd wit */
-      color: #000000;             /* altijd zwart */
+      background-color: #ffffff;
+      color: #000000;
     }
 
     body.theme-calm .option-button {
@@ -340,13 +334,14 @@
   </style>
 </head>
 <body class="theme-light">
-  <div class="header">Tafeltrainer</div>
-
   <div class="app-container">
     <div class="main-area">
+      <!-- Titel nu in het midden van het oefengedeelte -->
+      <div class="header">Tafeltrainer</div>
+
       <div class="question" id="questionDisplay">3 × 4 =</div>
 
-      <!-- Timer nu alleen zichtbaar bij tijdsdruk -->
+      <!-- Timer alleen zichtbaar bij tijdsdruk -->
       <div class="timer" id="timerContainer" style="display: none;">
         Tijd over: <span id="timeRemaining"></span> seconden
       </div>
@@ -366,10 +361,11 @@
       <div class="feedback" id="feedback"></div>
       <div class="streak-message" id="streakMessage"></div>
 
-      <!-- Klaar-knop nu onder de vraag / in de hoofdsectie -->
-      <button id="finishButton" class="primary-button" type="button" style="margin-top: 10px;">Klaar</button>
-
+      <!-- Volgende som eerst -->
       <button id="nextQuestionButton" class="next-button" style="display: none;">Volgende som</button>
+
+      <!-- Klaar nu altijd helemaal onderaan, onder Volgende som -->
+      <button id="finishButton" class="primary-button" type="button" style="margin-top: 10px;">Klaar</button>
     </div>
 
     <div class="menu">
@@ -381,9 +377,7 @@
             Alle tafels (2 t/m 10)
           </label>
         </div>
-        <div class="tables-list" id="tablesList">
-          <!-- Dynamisch gevuld -->
-        </div>
+        <div class="tables-list" id="tablesList"></div>
       </div>
 
       <div>
@@ -514,10 +508,10 @@
           </ul>
         </li>
         <li><strong>Hulp</strong>: met <em>Toon hulp</em> zie je een herhaalde optelling en stippen als ondersteuning.</li>
-        <li><strong>Lettergrootte</strong>: kies normaal of extra groot, bijvoorbeeld voor het digibord of leerlingen met visuele behoefte.</li>
-        <li><strong>Thema</strong>: kies een witte, zwarte, donkere of rustige achtergrond. De tekstkleur past zich automatisch aan.</li>
+        <li><strong>Lettergrootte</strong>: kies normaal of extra groot.</li>
+        <li><strong>Thema</strong>: kies een witte, zwarte, donkere of rustige achtergrond.</li>
         <li><strong>Klaar</strong>: toont een overzicht van je resultaten per tafel met een grafiek en statistieken.</li>
-        <li><strong>Exporteer CSV</strong>: downloadt de resultaten van deze sessie als csv-bestand voor gebruik in bijvoorbeeld Excel.</li>
+        <li><strong>Exporteer CSV</strong>: downloadt de resultaten van deze sessie als csv-bestand.</li>
       </ul>
       <button id="closeHelpButton" class="primary-button" type="button">Sluiten</button>
     </div>
@@ -527,9 +521,7 @@
   <div class="overlay" id="summaryOverlay">
     <div class="overlay-content">
       <h2>Overzicht van deze sessie</h2>
-      <div id="summaryContent">
-        <!-- Dynamisch gevuld -->
-      </div>
+      <div id="summaryContent"></div>
       <button id="closeSummaryButton" class="primary-button" type="button">Sluiten</button>
     </div>
   </div>
@@ -670,7 +662,6 @@
     function startTimer() {
       clearTimer();
 
-      // Geen tijdsdruk: timer volledig verbergen
       if (!useTimerCheckbox.checked) {
         timerContainer.style.display = 'none';
         timeRemainingSpan.textContent = '';
@@ -1139,40 +1130,6 @@
       });
 
       exportCsvButton.addEventListener('click', exportCsv);
-    }
-
-    function initThemeSwitcher() {
-      const themeRadios = document.querySelectorAll('input[name="theme"]');
-      themeRadios.forEach(r => {
-        r.addEventListener('change', () => {
-          if (r.checked) {
-            if (r.value === 'light') {
-              document.body.className = 'theme-light';
-            } else if (r.value === 'dark') {
-              document.body.className = 'theme-dark';
-            } else if (r.value === 'dim') {
-              document.body.className = 'theme-dim';
-            } else if (r.value === 'calm') {
-              document.body.className = 'theme-calm';
-            }
-          }
-        });
-      });
-    }
-
-    function initFontSizeSwitcher() {
-      const fontRadios = document.querySelectorAll('input[name="fontSize"]');
-      fontRadios.forEach(r => {
-        r.addEventListener('change', () => {
-          if (r.checked) {
-            if (r.value === 'large') {
-              document.body.classList.add('font-large');
-            } else {
-              document.body.classList.remove('font-large');
-            }
-          }
-        });
-      });
     }
 
     // Init
