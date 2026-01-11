@@ -49,10 +49,9 @@
       justify-content: center;
       padding: 20px;
       box-sizing: border-box;
-      position: relative; /* nodig voor absolute positie zandloper */
+      position: relative; /* voor absolute zandloper */
     }
 
-    /* Som in een rij (zonder zandloper) */
     .question-row {
       display: flex;
       align-items: center;
@@ -69,7 +68,7 @@
       font-size: 10rem;
     }
 
-    /* Grote zandloper, rechts tussen antwoorden en menu */
+    /* Grote zandloper rechts, tussen antwoorden en menu */
     .hourglass-container {
       position: absolute;
       right: 320px;         /* tussen hoofdgebied en menu van 290px */
@@ -77,7 +76,7 @@
       transform: translateY(-50%);
       width: 160px;         /* 2x zo groot */
       height: 360px;        /* 2x zo groot */
-      display: none;        /* alleen tonen bij tijdsdruk */
+      display: none;
     }
 
     .hourglass-svg {
@@ -478,6 +477,17 @@
         </div>
       </div>
 
+      <!-- Nieuwe sectie: Zandloper, alleen zichtbaar bij tijdsdruk -->
+      <div id="hourglassMenuSection" style="display: none;">
+        <div class="menu-section-title">Zandloper</div>
+        <div class="inline-options">
+          <label>
+            <input type="checkbox" id="showHourglassCheckbox" checked>
+            Zandloper tonen
+          </label>
+        </div>
+      </div>
+
       <div>
         <div class="menu-section-title">Hulp</div>
         <div class="inline-options">
@@ -560,6 +570,7 @@
           <ul>
             <li>Vul het aantal seconden in.</li>
             <li>Zet het vinkje <em>Met tijdsdruk werken</em> aan als je met een echte tijdslimiet wilt oefenen.</li>
+            <li>Bij tijdsdruk kun je de <em>zandloper</em> aan of uit zetten.</li>
           </ul>
         </li>
         <li><strong>Hulp</strong>: met <em>Toon hulp</em> zie je een herhaalde optelling en stippen als ondersteuning.</li>
@@ -601,6 +612,9 @@
     const helpContainer = document.getElementById('helpContainer');
     const helpExpression = document.getElementById('helpExpression');
     const helpDots = document.getElementById('helpDots');
+
+    const hourglassMenuSection = document.getElementById('hourglassMenuSection');
+    const showHourglassCheckbox = document.getElementById('showHourglassCheckbox');
 
     const helpButton = document.getElementById('helpButton');
     const helpOverlay = document.getElementById('helpOverlay');
@@ -757,18 +771,29 @@
       if (!useTimerCheckbox.checked) {
         timerContainer.style.display = 'none';
         timeRemainingSpan.textContent = '';
+        hourglassMenuSection.style.display = 'none';
         hideHourglass();
         return;
       }
 
+      // Timertekst aan
       timerContainer.style.display = 'block';
       currentTimeLimit = getTimeLimit();
       let startTimeMs = null;
       const durationMs = currentTimeLimit * 1000;
 
-      hourglassContainer.style.display = 'block';
-      updateHourglass(1);
-      flipHourglass();
+      // Zandloper-menu tonen
+      hourglassMenuSection.style.display = 'block';
+
+      const useHourglass = showHourglassCheckbox && showHourglassCheckbox.checked;
+
+      if (useHourglass) {
+        hourglassContainer.style.display = 'block';
+        updateHourglass(1);
+        flipHourglass();
+      } else {
+        hideHourglass();
+      }
 
       function tick(timestamp) {
         if (!questionActive) {
@@ -786,15 +811,19 @@
         if (remaining <= 0) {
           remaining = 0;
           timeRemainingSpan.textContent = '0';
-          updateHourglass(0);
+          if (useHourglass) {
+            updateHourglass(0);
+          }
           timerId = null;
           handleTimeUp();
           return;
         }
 
         timeRemainingSpan.textContent = String(Math.ceil(remaining));
-        const fraction = remaining / currentTimeLimit;
-        updateHourglass(fraction);
+        if (useHourglass) {
+          const fraction = remaining / currentTimeLimit;
+          updateHourglass(fraction);
+        }
 
         timerId = requestAnimationFrame(tick);
       }
@@ -1251,6 +1280,12 @@
 
       useTimerCheckbox.addEventListener('change', () => {
         generateNewQuestion();
+      });
+
+      showHourglassCheckbox.addEventListener('change', () => {
+        if (useTimerCheckbox.checked) {
+          generateNewQuestion();
+        }
       });
 
       showHelpCheckbox.addEventListener('change', () => {
