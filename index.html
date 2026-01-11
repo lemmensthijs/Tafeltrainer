@@ -76,11 +76,8 @@
       border-radius: 6px;
       border: 1px solid #888;
       cursor: pointer;
-      background-color: rgba(255,255,255,0.1);
-    }
-
-    body.theme-light .option-button {
-      background-color: #f0f0f0;
+      background-color: #ffffff;  /* altijd wit */
+      color: #000000;             /* altijd zwart */
     }
 
     .option-button:disabled {
@@ -195,7 +192,7 @@
       position: fixed;
       inset: 0;
       background-color: rgba(0,0,0,0.6);
-      display: none;              /* belangrijk: standaard UIT */
+      display: none;
       align-items: center;
       justify-content: center;
       z-index: 1000;
@@ -275,10 +272,16 @@
           <input type="number" id="timeLimitInput" class="time-input" min="1" max="10" value="5">
           <span>(1 tot 10)</span>
         </div>
+        <div class="inline-options" style="margin-top: 6px;">
+          <label>
+            <input type="checkbox" id="useTimerCheckbox">
+            Met tijdsdruk werken
+          </label>
+        </div>
       </div>
 
       <div>
-        <div class="menu-section-title">Achtergrond</div>
+        <div class="menu-section-title">Thema</div>
         <div class="inline-options">
           <label>
             <input type="radio" name="theme" value="light" checked>
@@ -305,13 +308,12 @@
     </div>
   </div>
 
-  <!-- Uitleg-overlay, nu expliciet standaard verborgen -->
   <div class="overlay" id="helpOverlay">
     <div class="overlay-content">
       <h2>Uitleg tafeltrainer</h2>
       <p>
         Met deze tafeltrainer oefen je de tafels van 2 tot en met 10. In het midden van het scherm zie je steeds een som,
-        bijvoorbeeld 3 × 4 =. Jij geeft het juiste antwoord, binnen de tijd die je zelf hebt ingesteld.
+        bijvoorbeeld 3 × 4 =. Jij geeft het juiste antwoord, eventueel binnen de tijd die je zelf hebt ingesteld.
       </p>
       <ul>
         <li><strong>Kies tafels</strong>: vink aan met welke tafels je wilt oefenen. Met de optie <em>Alle tafels</em> oefen je alles door elkaar.</li>
@@ -321,15 +323,19 @@
             <li><em>Open vraag</em>: je typt zelf het antwoord in het vak en bevestigt met OK of Enter.</li>
           </ul>
         </li>
-        <li><strong>Tijd per som</strong>: stel in hoeveel seconden je hebt om een som op te lossen. De klok telt af bij elke nieuwe som.</li>
-        <li><strong>Achtergrond</strong>: kies een witte, zwarte of donkere achtergrond. De tekstkleur past zich automatisch aan.</li>
+        <li><strong>Tijd per som</strong>:
+          <ul>
+            <li>Vul het aantal seconden in.</li>
+            <li>Zet het vinkje <em>Met tijdsdruk werken</em> aan als je met een echte tijdslimiet wilt oefenen.</li>
+          </ul>
+        </li>
+        <li><strong>Thema</strong>: kies een witte, zwarte of donkere achtergrond. De tekstkleur past zich automatisch aan.</li>
         <li><strong>Volgende som</strong>: na een goed antwoord of wanneer de tijd op is, gebruik je de knop <em>Volgende som</em> voor een nieuwe som.</li>
       </ul>
       <button id="closeHelpButton" class="primary-button" type="button">Sluiten</button>
     </div>
   </div>
 
-  <!-- Script bewust helemaal onderaan, na de HTML -->
   <script>
     const tables = [2, 3, 4, 5, 6, 7, 8, 9, 10];
 
@@ -344,6 +350,7 @@
     const nextQuestionButton = document.getElementById('nextQuestionButton');
     const tablesList = document.getElementById('tablesList');
     const allTablesCheckbox = document.getElementById('allTablesCheckbox');
+    const useTimerCheckbox = document.getElementById('useTimerCheckbox');
     const helpButton = document.getElementById('helpButton');
     const helpOverlay = document.getElementById('helpOverlay');
     const closeHelpButton = document.getElementById('closeHelpButton');
@@ -362,11 +369,10 @@
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.value = String(table);
-        checkbox.checked = false; // basis: uit
+        checkbox.checked = false;
 
         checkbox.addEventListener('change', () => {
           if (checkbox.checked) {
-            // Specifieke tafel aangevinkt, dan Alle tafels uit
             allTablesCheckbox.checked = false;
           }
           generateNewQuestion();
@@ -390,7 +396,6 @@
         }
       });
       if (selected.length === 0) {
-        // fallback: als niets is aangevinkt, toch alle tafels gebruiken
         return [...tables];
       }
       return selected;
@@ -424,6 +429,13 @@
 
     function startTimer() {
       clearTimer();
+
+      // Geen tijdsdruk gekozen
+      if (!useTimerCheckbox.checked) {
+        timeRemainingSpan.textContent = 'geen';
+        return;
+      }
+
       timeRemaining = getTimeLimit();
       timeRemainingSpan.textContent = timeRemaining;
       timerId = setInterval(() => {
@@ -594,6 +606,11 @@
 
       timeLimitInput.addEventListener('change', () => {
         getTimeLimit();
+        generateNewQuestion();
+      });
+
+      useTimerCheckbox.addEventListener('change', () => {
+        generateNewQuestion();
       });
 
       submitAnswerButton.addEventListener('click', () => {
@@ -612,7 +629,6 @@
 
       allTablesCheckbox.addEventListener('change', () => {
         if (allTablesCheckbox.checked) {
-          // Alle tafels gekozen, losse tafels uit
           const checkboxes = tablesList.querySelectorAll('input[type="checkbox"]');
           checkboxes.forEach(cb => {
             cb.checked = false;
@@ -622,7 +638,6 @@
       });
     }
 
-    // Init direct, script staat onderaan dus DOM is klaar
     initTablesList();
     initThemeSwitcher();
     initHelpOverlay();
