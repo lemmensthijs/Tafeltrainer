@@ -51,7 +51,7 @@
       box-sizing: border-box;
     }
 
-    /* Rij met som en zandloper naast elkaar */
+    /* Som en zandloper naast elkaar */
     .question-row {
       display: flex;
       align-items: center;
@@ -72,7 +72,7 @@
     .hourglass-container {
       width: 80px;
       height: 180px;
-      display: none; /* alleen tonen bij tijdsdruk */
+      display: none;
     }
 
     .hourglass-svg {
@@ -359,42 +359,36 @@
     <div class="main-area">
       <div class="header">Tafeltrainer</div>
 
-      <!-- Som + zandloper naast elkaar -->
       <div class="question-row">
         <div class="question" id="questionDisplay">3 × 4 =</div>
 
         <div class="hourglass-container" id="hourglassContainer">
           <svg id="hourglassSvg" class="hourglass-svg" viewBox="0 0 80 180">
             <defs>
-              <!-- Clip voor bovenste driehoek -->
               <clipPath id="topClip">
                 <polygon points="10,10 70,10 40,90" />
               </clipPath>
-              <!-- Clip voor onderste driehoek -->
               <clipPath id="bottomClip">
                 <polygon points="10,170 70,170 40,90" />
               </clipPath>
             </defs>
 
-            <!-- Frame van de zandloper -->
+            <!-- Frame -->
             <g stroke="#555" stroke-width="3" fill="none">
-              <!-- Boven- en onderrand -->
               <rect x="15" y="5" width="50" height="10" rx="3" ry="3" fill="#ddd" />
               <rect x="15" y="165" width="50" height="10" rx="3" ry="3" fill="#ddd" />
-              <!-- Zij-lijnen -->
               <line x1="20" y1="15" x2="35" y2="75" />
               <line x1="60" y1="15" x2="45" y2="75" />
               <line x1="35" y1="105" x2="20" y2="165" />
               <line x1="45" y1="105" x2="60" y2="165" />
-              <!-- Middennek -->
               <line x1="35" y1="90" x2="45" y2="90" />
             </g>
 
-            <!-- Zand (boven) -->
+            <!-- Zand boven -->
             <rect id="topSand" x="10" y="10" width="60" height="80"
                   clip-path="url(#topClip)" fill="#e0c070" />
 
-            <!-- Zand (onder) -->
+            <!-- Zand onder -->
             <rect id="bottomSand" x="10" y="170" width="60" height="0"
                   clip-path="url(#bottomClip)" fill="#e0c070" />
           </svg>
@@ -639,7 +633,7 @@
     let firstAnswerGiven = false;
     let firstAnswerCorrect = false;
 
-    let currentTimeLimit = 5; // voor de zandloper-schaal
+    let currentTimeLimit = 5;
 
     function arraysEqual(a, b) {
       if (a.length !== b.length) return false;
@@ -726,7 +720,6 @@
 
     function flipHourglass() {
       if (!hourglassSvg) return;
-      // korte flip-animatie
       hourglassSvg.style.transform = 'rotate(180deg)';
       setTimeout(() => {
         hourglassSvg.style.transform = 'rotate(0deg)';
@@ -734,17 +727,14 @@
     }
 
     function updateHourglass(fraction) {
-      // fraction: 1 = volledig vol boven, 0 = leeg boven
       fraction = Math.max(0, Math.min(1, fraction));
-      const maxHeight = 80; // hoogte "zand"-driehoeken
+      const maxHeight = 80;
 
-      // Boven: hoogte neemt af
       const topHeight = maxHeight * fraction;
       const topY = 10 + (maxHeight - topHeight);
       topSandRect.setAttribute('y', topY);
       topSandRect.setAttribute('height', topHeight);
 
-      // Onder: hoogte neemt toe
       const bottomHeight = maxHeight * (1 - fraction);
       const bottomY = 170 - bottomHeight;
       bottomSandRect.setAttribute('y', bottomY);
@@ -753,7 +743,7 @@
 
     function hideHourglass() {
       hourglassContainer.style.display = 'none';
-      updateHourglass(1); // reset visueel
+      updateHourglass(1);
     }
 
     function startTimer() {
@@ -771,7 +761,6 @@
       timeRemaining = currentTimeLimit;
       timeRemainingSpan.textContent = timeRemaining;
 
-      // Zandloper tonen en resetten
       hourglassContainer.style.display = 'block';
       updateHourglass(1);
       flipHourglass();
@@ -783,7 +772,6 @@
         }
         timeRemainingSpan.textContent = timeRemaining;
 
-        // Zandloper bijwerken
         const fraction = currentTimeLimit > 0 ? timeRemaining / currentTimeLimit : 0;
         updateHourglass(fraction);
 
@@ -942,7 +930,6 @@
         firstAttemptCorrect: firstAnswerGiven && firstAnswerCorrect
       });
 
-      // Streak alleen op basis van eerste antwoord
       if (firstAnswerCorrect && !endedByTime) {
         streakCount += 1;
         showStreakFeedback();
@@ -1014,7 +1001,6 @@
 
       setQuestionActive(false);
       feedback.textContent = 'De tijd is om. Het juiste antwoord is ' + currentAnswer + '.';
-      // zandloper leeg
       updateHourglass(0);
       recordResult(false, null, true);
       nextQuestionButton.style.display = 'inline-block';
@@ -1034,8 +1020,6 @@
         const row = document.createElement('div');
         row.className = 'help-row';
         for (let j = 0; j < currentFactor; j++) {
-          const dot = document.createElement('div');
-          row.className = 'help-row';
           const dot = document.createElement('div');
           dot.className = 'help-dot';
           row.appendChild(dot);
@@ -1279,6 +1263,25 @@
       });
 
       exportCsvButton.addEventListener('click', exportCsv);
+    }
+
+    function initThemeSwitcher() {
+      const themeRadios = document.querySelectorAll('input[name="theme"]');
+      themeRadios.forEach(r => {
+        r.addEventListener('change', () => {
+          if (r.checked) {
+            if (r.value === 'light') {
+              document.body.className = 'theme-light';
+            } else if (r.value === 'dark') {
+              document.body.className = 'theme-dark';
+            } else if (r.value === 'dim') {
+              document.body.className = 'theme-dim';
+            } else if (r.value === 'calm') {
+              document.body.className = 'theme-calm';
+            }
+          }
+        });
+      });
     }
 
     // Init
