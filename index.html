@@ -345,8 +345,10 @@
   <div class="app-container">
     <div class="main-area">
       <div class="question" id="questionDisplay">3 × 4 =</div>
-      <div class="timer">
-        Tijd over: <span id="timeRemaining">geen</span>
+
+      <!-- Timer nu alleen zichtbaar bij tijdsdruk -->
+      <div class="timer" id="timerContainer" style="display: none;">
+        Tijd over: <span id="timeRemaining"></span> seconden
       </div>
 
       <div class="help-visual" id="helpContainer" style="display: none;">
@@ -363,6 +365,10 @@
 
       <div class="feedback" id="feedback"></div>
       <div class="streak-message" id="streakMessage"></div>
+
+      <!-- Klaar-knop nu onder de vraag / in de hoofdsectie -->
+      <button id="finishButton" class="primary-button" type="button" style="margin-top: 10px;">Klaar</button>
+
       <button id="nextQuestionButton" class="next-button" style="display: none;">Volgende som</button>
     </div>
 
@@ -470,7 +476,6 @@
 
       <div class="inline-options">
         <button id="helpButton" class="primary-button" type="button">Uitleg</button>
-        <button id="finishButton" class="primary-button" type="button">Klaar</button>
         <button id="exportCsvButton" class="primary-button" type="button">Exporteer CSV</button>
       </div>
 
@@ -533,6 +538,7 @@
     const tables = [2, 3, 4, 5, 6, 7, 8, 9, 10];
 
     const questionDisplay = document.getElementById('questionDisplay');
+    const timerContainer = document.getElementById('timerContainer');
     const multipleChoiceContainer = document.getElementById('multipleChoiceContainer');
     const openAnswerContainer = document.getElementById('openAnswerContainer');
     const answerInput = document.getElementById('answerInput');
@@ -568,13 +574,11 @@
     let timeRemaining = 0;
     let questionActive = false;
 
-    // Voor volgorde (rijtjes vs random)
     let orderMode = 'random';
     let seqTableIndex = 0;
     let seqFactor = 1;
     let lastSelectedTables = tables.slice();
 
-    // Resultaten per sessie
     let sessionResults = [];
     let questionStartTime = 0;
     let wrongAttemptsCurrent = 0;
@@ -666,11 +670,14 @@
     function startTimer() {
       clearTimer();
 
+      // Geen tijdsdruk: timer volledig verbergen
       if (!useTimerCheckbox.checked) {
-        timeRemainingSpan.textContent = 'geen';
+        timerContainer.style.display = 'none';
+        timeRemainingSpan.textContent = '';
         return;
       }
 
+      timerContainer.style.display = 'block';
       timeRemaining = getTimeLimit();
       timeRemainingSpan.textContent = timeRemaining;
       timerId = setInterval(() => {
@@ -732,6 +739,9 @@
 
     function generateNewQuestion() {
       clearTimer();
+      timerContainer.style.display = 'none';
+      timeRemainingSpan.textContent = '';
+
       feedback.textContent = '';
       streakMessage.textContent = '';
       streakMessage.classList.remove('show');
@@ -1129,6 +1139,40 @@
       });
 
       exportCsvButton.addEventListener('click', exportCsv);
+    }
+
+    function initThemeSwitcher() {
+      const themeRadios = document.querySelectorAll('input[name="theme"]');
+      themeRadios.forEach(r => {
+        r.addEventListener('change', () => {
+          if (r.checked) {
+            if (r.value === 'light') {
+              document.body.className = 'theme-light';
+            } else if (r.value === 'dark') {
+              document.body.className = 'theme-dark';
+            } else if (r.value === 'dim') {
+              document.body.className = 'theme-dim';
+            } else if (r.value === 'calm') {
+              document.body.className = 'theme-calm';
+            }
+          }
+        });
+      });
+    }
+
+    function initFontSizeSwitcher() {
+      const fontRadios = document.querySelectorAll('input[name="fontSize"]');
+      fontRadios.forEach(r => {
+        r.addEventListener('change', () => {
+          if (r.checked) {
+            if (r.value === 'large') {
+              document.body.classList.add('font-large');
+            } else {
+              document.body.classList.remove('font-large');
+            }
+          }
+        });
+      });
     }
 
     // Init
