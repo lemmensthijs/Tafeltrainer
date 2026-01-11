@@ -31,14 +31,14 @@
 
     .header {
       text-align: center;
-      font-size: 3.5rem; /* groter gemaakt */
+      font-size: 3.5rem;
       font-weight: bold;
-      margin-bottom: 10px;
+      margin-bottom: 60px; /* meer ruimte onder de titel, dus hoger t.o.v. de som */
     }
 
     .app-container {
       display: flex;
-      min-height: 100vh; /* geen ruimte meer reserveren voor een bovenbalk */
+      min-height: 100vh;
     }
 
     .main-area {
@@ -52,7 +52,7 @@
     }
 
     .question {
-      font-size: 8rem;  /* circa twee keer zo groot als eerder */
+      font-size: 8rem;
       margin-bottom: 20px;
       text-align: center;
     }
@@ -314,7 +314,7 @@
     }
 
     .summary-bar-label {
-      width: 60px;
+      width: 80px;
       text-align: right;
       font-size: 0.9rem;
     }
@@ -336,12 +336,10 @@
 <body class="theme-light">
   <div class="app-container">
     <div class="main-area">
-      <!-- Titel nu in het midden van het oefengedeelte -->
       <div class="header">Tafeltrainer</div>
 
       <div class="question" id="questionDisplay">3 × 4 =</div>
 
-      <!-- Timer alleen zichtbaar bij tijdsdruk -->
       <div class="timer" id="timerContainer" style="display: none;">
         Tijd over: <span id="timeRemaining"></span> seconden
       </div>
@@ -361,10 +359,7 @@
       <div class="feedback" id="feedback"></div>
       <div class="streak-message" id="streakMessage"></div>
 
-      <!-- Volgende som eerst -->
       <button id="nextQuestionButton" class="next-button" style="display: none;">Volgende som</button>
-
-      <!-- Klaar nu altijd helemaal onderaan, onder Volgende som -->
       <button id="finishButton" class="primary-button" type="button" style="margin-top: 10px;">Klaar</button>
     </div>
 
@@ -479,7 +474,6 @@
     </div>
   </div>
 
-  <!-- Uitleg-overlay -->
   <div class="overlay" id="helpOverlay">
     <div class="overlay-content">
       <h2>Uitleg tafeltrainer</h2>
@@ -517,7 +511,6 @@
     </div>
   </div>
 
-  <!-- Overzicht-overlay -->
   <div class="overlay" id="summaryOverlay">
     <div class="overlay-content">
       <h2>Overzicht van deze sessie</h2>
@@ -575,6 +568,10 @@
     let questionStartTime = 0;
     let wrongAttemptsCurrent = 0;
     let streakCount = 0;
+
+    // Voor eerste antwoord per som
+    let firstAnswerGiven = false;
+    let firstAnswerCorrect = false;
 
     function arraysEqual(a, b) {
       if (a.length !== b.length) return false;
@@ -738,6 +735,8 @@
       streakMessage.classList.remove('show');
       nextQuestionButton.style.display = 'none';
       wrongAttemptsCurrent = 0;
+      firstAnswerGiven = false;
+      firstAnswerCorrect = false;
 
       const selectedTables = getSelectedTables();
       orderMode = getOrderMode();
@@ -809,6 +808,13 @@
       answerInput.focus();
     }
 
+    function noteFirstAnswer(isCorrect) {
+      if (!firstAnswerGiven) {
+        firstAnswerGiven = true;
+        firstAnswerCorrect = !!isCorrect;
+      }
+    }
+
     function recordResult(isCorrect, userAnswer, endedByTime) {
       const duration = (performance.now() - questionStartTime) / 1000;
       sessionResults.push({
@@ -819,7 +825,8 @@
         wrongAttempts: wrongAttemptsCurrent,
         timeSeconds: duration,
         questionType: currentQuestionType,
-        endedByTime: !!endedByTime
+        endedByTime: !!endedByTime,
+        firstAttemptCorrect: firstAnswerGiven && firstAnswerCorrect
       });
 
       if (isCorrect && !endedByTime) {
@@ -844,7 +851,12 @@
     function handleMultipleChoiceAnswer(selectedValue) {
       if (!questionActive) return;
 
-      if (selectedValue === currentAnswer) {
+      const isCorrect = selectedValue === currentAnswer;
+
+      // Noteer eerste antwoord
+      noteFirstAnswer(isCorrect);
+
+      if (isCorrect) {
         feedback.textContent = 'Juist! Goed gedaan.';
         setQuestionActive(false);
         clearTimer();
@@ -863,7 +875,11 @@
         feedback.textContent = 'Vul een getal in.';
         return;
       }
-      if (value === currentAnswer) {
+      const isCorrect = value === currentAnswer;
+
+      noteFirstAnswer(isCorrect);
+
+      if (isCorrect) {
         feedback.textContent = 'Juist! Goed gedaan.';
         setQuestionActive(false);
         clearTimer();
@@ -877,6 +893,13 @@
 
     function handleTimeUp() {
       if (!questionActive) return;
+
+      // Als er nog geen antwoord is gegeven, eerste antwoord is daarmee ook niet goed
+      if (!firstAnswerGiven) {
+        firstAnswerGiven = true;
+        firstAnswerCorrect = false;
+      }
+
       setQuestionActive(false);
       feedback.textContent = 'De tijd is om. Het juiste antwoord is ' + currentAnswer + '.';
       recordResult(false, null, true);
@@ -966,7 +989,9 @@
           questions: 0,
           correct: 0,
           wrongAttempts: 0,
-          totalTime: 0
+          totalTime: 0,
+          firstTotal: 0,
+          firstCorrect: 0
         };
       });
 
@@ -976,16 +1001,21 @@
         if (r.correct) s.correct += 1;
         s.wrongAttempts += r.wrongAttempts || 0;
         s.totalTime += r.timeSeconds || 0;
+
+        s.firstTotal += 1;
+        if (r.firstAttemptCorrect === true) {
+          s.firstCorrect += 1;
+        }
       });
 
       let html = '';
 
-      html += '<h3>Grafiek per tafel (percentage goed)</h3>';
+      html += '<h3>Grafiek per tafel (eerste antwoord, % goed)</h3>';
       html += '<div>';
       tables.forEach(t => {
         const s = statsByTable[t];
-        if (s.questions === 0) return;
-        const rate = s.correct / s.questions;
+        if (s.firstTotal === 0) return;
+        const rate = s.firstCorrect / s.firstTotal;
         const width = Math.round(rate * 100);
         html += '<div class="summary-bar-row">';
         html += '<div class="summary-bar-label">Tafel ' + t + '</div>';
@@ -997,7 +1027,7 @@
 
       html += '<h3>Statistieken per tafel</h3>';
       html += '<table class="summary-table">';
-      html += '<thead><tr><th>Tafel</th><th>Aantal sommen</th><th>Aantal goed</th><th>Fouten (pogingen)</th><th>Gem. tijd (s)</th></tr></thead><tbody>';
+      html += '<thead><tr><th>Tafel</th><th>Aantal sommen</th><th>Aantal goed (eind)</th><th>Eerste antwoord goed</th><th>Fouten (pogingen)</th><th>Gem. tijd (s)</th></tr></thead><tbody>';
 
       tables.forEach(t => {
         const s = statsByTable[t];
@@ -1007,6 +1037,7 @@
         html += '<td>' + t + '</td>';
         html += '<td>' + s.questions + '</td>';
         html += '<td>' + s.correct + '</td>';
+        html += '<td>' + s.firstCorrect + ' / ' + s.firstTotal + '</td>';
         html += '<td>' + s.wrongAttempts + '</td>';
         html += '<td>' + avgTime.toFixed(1) + '</td>';
         html += '</tr>';
@@ -1045,7 +1076,8 @@
         'wrongAttempts',
         'timeSeconds',
         'questionType',
-        'endedByTime'
+        'endedByTime',
+        'firstAttemptCorrect'
       ];
       const lines = [header.join(';')];
 
@@ -1058,7 +1090,8 @@
           r.wrongAttempts ?? 0,
           r.timeSeconds.toFixed(2),
           r.questionType,
-          r.endedByTime ? '1' : '0'
+          r.endedByTime ? '1' : '0',
+          r.firstAttemptCorrect ? '1' : '0'
         ];
         lines.push(row.join(';'));
       });
@@ -1130,6 +1163,40 @@
       });
 
       exportCsvButton.addEventListener('click', exportCsv);
+    }
+
+    function initThemeSwitcher() {
+      const themeRadios = document.querySelectorAll('input[name="theme"]');
+      themeRadios.forEach(r => {
+        r.addEventListener('change', () => {
+          if (r.checked) {
+            if (r.value === 'light') {
+              document.body.className = 'theme-light';
+            } else if (r.value === 'dark') {
+              document.body.className = 'theme-dark';
+            } else if (r.value === 'dim') {
+              document.body.className = 'theme-dim';
+            } else if (r.value === 'calm') {
+              document.body.className = 'theme-calm';
+            }
+          }
+        });
+      });
+    }
+
+    function initFontSizeSwitcher() {
+      const fontRadios = document.querySelectorAll('input[name="fontSize"]');
+      fontRadios.forEach(r => {
+        r.addEventListener('change', () => {
+          if (r.checked) {
+            if (r.value === 'large') {
+              document.body.classList.add('font-large');
+            } else {
+              document.body.classList.remove('font-large');
+            }
+          }
+        });
+      });
     }
 
     // Init
