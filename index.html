@@ -24,6 +24,11 @@
       color: #f3f3f3;
     }
 
+    body.theme-calm {
+      background-color: #f5f5f5;
+      color: #222222;
+    }
+
     .header {
       text-align: center;
       font-size: 2rem;
@@ -54,13 +59,59 @@
 
     .question {
       font-size: 4rem;
-      margin-bottom: 30px;
+      margin-bottom: 20px;
       text-align: center;
+    }
+
+    body.font-large .question {
+      font-size: 5rem;
     }
 
     .timer {
       font-size: 1.4rem;
+      margin-bottom: 10px;
+    }
+
+    .help-visual {
       margin-bottom: 20px;
+      text-align: center;
+      max-width: 500px;
+    }
+
+    .help-visual-expression {
+      margin-bottom: 8px;
+      font-size: 1.2rem;
+    }
+
+    .help-dots {
+      display: inline-block;
+      padding: 6px;
+      border-radius: 6px;
+      border: 1px solid rgba(0,0,0,0.1);
+      background-color: rgba(255,255,255,0.6);
+    }
+
+    .help-row {
+      display: flex;
+      justify-content: center;
+      margin: 2px 0;
+    }
+
+    .help-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin: 2px;
+      background-color: #0077cc;
+    }
+
+    body.theme-dark .help-dot,
+    body.theme-dim .help-dot {
+      background-color: #66b3ff;
+    }
+
+    body.theme-calm .help-dot {
+      background-color: #4a90e2;
     }
 
     .options-container {
@@ -80,6 +131,11 @@
       color: #000000;             /* altijd zwart */
     }
 
+    body.theme-calm .option-button {
+      padding: 14px 24px;
+      font-size: 1.5rem;
+    }
+
     .option-button:disabled {
       opacity: 0.5;
       cursor: default;
@@ -89,7 +145,7 @@
       display: flex;
       gap: 10px;
       align-items: center;
-      margin-bottom: 20px;
+      margin-bottom: 10px;
     }
 
     .answer-input {
@@ -97,6 +153,11 @@
       padding: 6px 10px;
       width: 150px;
       box-sizing: border-box;
+    }
+
+    body.font-large .answer-input {
+      font-size: 1.6rem;
+      width: 180px;
     }
 
     .primary-button {
@@ -131,8 +192,22 @@
       margin-top: 10px;
     }
 
+    .streak-message {
+      min-height: 24px;
+      font-size: 1.2rem;
+      margin-top: 5px;
+      opacity: 0;
+      transform: scale(0.9);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+
+    .streak-message.show {
+      opacity: 1;
+      transform: scale(1);
+    }
+
     .menu {
-      width: 280px;
+      width: 290px;
       padding: 20px;
       box-sizing: border-box;
       border-left: 1px solid rgba(0,0,0,0.2);
@@ -144,6 +219,11 @@
     body.theme-dark .menu,
     body.theme-dim .menu {
       border-left: 1px solid rgba(255,255,255,0.2);
+    }
+
+    body.theme-calm .menu {
+      border-left: 1px solid rgba(0,0,0,0.1);
+      background-color: #fdfdfd;
     }
 
     .menu-section-title {
@@ -199,8 +279,10 @@
     }
 
     .overlay-content {
-      max-width: 600px;
-      width: 90%;
+      max-width: 700px;
+      width: 95%;
+      max-height: 90vh;
+      overflow-y: auto;
       background-color: #ffffff;
       color: #000000;
       padding: 20px;
@@ -215,6 +297,46 @@
     .overlay-content button {
       margin-top: 10px;
     }
+
+    .summary-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 0.95rem;
+    }
+
+    .summary-table th,
+    .summary-table td {
+      border: 1px solid #ccc;
+      padding: 4px 6px;
+      text-align: center;
+    }
+
+    .summary-bar-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 4px 0;
+    }
+
+    .summary-bar-label {
+      width: 60px;
+      text-align: right;
+      font-size: 0.9rem;
+    }
+
+    .summary-bar-track {
+      flex: 1;
+      height: 12px;
+      background-color: #eee;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .summary-bar-fill {
+      height: 100%;
+      background-color: #28a745;
+    }
   </style>
 </head>
 <body class="theme-light">
@@ -224,7 +346,12 @@
     <div class="main-area">
       <div class="question" id="questionDisplay">3 × 4 =</div>
       <div class="timer">
-        Tijd over: <span id="timeRemaining">0</span> seconden
+        Tijd over: <span id="timeRemaining">geen</span>
+      </div>
+
+      <div class="help-visual" id="helpContainer" style="display: none;">
+        <div class="help-visual-expression" id="helpExpression"></div>
+        <div class="help-dots" id="helpDots"></div>
       </div>
 
       <div class="options-container" id="multipleChoiceContainer" style="display: none;"></div>
@@ -235,6 +362,7 @@
       </div>
 
       <div class="feedback" id="feedback"></div>
+      <div class="streak-message" id="streakMessage"></div>
       <button id="nextQuestionButton" class="next-button" style="display: none;">Volgende som</button>
     </div>
 
@@ -249,6 +377,20 @@
         </div>
         <div class="tables-list" id="tablesList">
           <!-- Dynamisch gevuld -->
+        </div>
+      </div>
+
+      <div>
+        <div class="menu-section-title">Volgorde</div>
+        <div class="inline-options">
+          <label>
+            <input type="radio" name="orderMode" value="random" checked>
+            Door elkaar
+          </label>
+          <label>
+            <input type="radio" name="orderMode" value="sequential">
+            Rijtjes
+          </label>
         </div>
       </div>
 
@@ -281,6 +423,30 @@
       </div>
 
       <div>
+        <div class="menu-section-title">Hulp</div>
+        <div class="inline-options">
+          <label>
+            <input type="checkbox" id="showHelpCheckbox">
+            Toon hulp
+          </label>
+        </div>
+      </div>
+
+      <div>
+        <div class="menu-section-title">Lettergrootte</div>
+        <div class="inline-options">
+          <label>
+            <input type="radio" name="fontSize" value="normal" checked>
+            Normaal
+          </label>
+          <label>
+            <input type="radio" name="fontSize" value="large">
+            Groot
+          </label>
+        </div>
+      </div>
+
+      <div>
         <div class="menu-section-title">Thema</div>
         <div class="inline-options">
           <label>
@@ -295,11 +461,17 @@
             <input type="radio" name="theme" value="dim">
             Donker
           </label>
+          <label>
+            <input type="radio" name="theme" value="calm">
+            Rustig
+          </label>
         </div>
       </div>
 
-      <div>
+      <div class="inline-options">
         <button id="helpButton" class="primary-button" type="button">Uitleg</button>
+        <button id="finishButton" class="primary-button" type="button">Klaar</button>
+        <button id="exportCsvButton" class="primary-button" type="button">Exporteer CSV</button>
       </div>
 
       <div class="footer">
@@ -308,6 +480,7 @@
     </div>
   </div>
 
+  <!-- Uitleg-overlay -->
   <div class="overlay" id="helpOverlay">
     <div class="overlay-content">
       <h2>Uitleg tafeltrainer</h2>
@@ -317,10 +490,16 @@
       </p>
       <ul>
         <li><strong>Kies tafels</strong>: vink aan met welke tafels je wilt oefenen. Met de optie <em>Alle tafels</em> oefen je alles door elkaar.</li>
+        <li><strong>Volgorde</strong>:
+          <ul>
+            <li><em>Door elkaar</em>: sommen komen willekeurig.</li>
+            <li><em>Rijtjes</em>: je oefent elke tafel in volgorde van 1 tot en met 10.</li>
+          </ul>
+        </li>
         <li><strong>Vraagtype</strong>:
           <ul>
             <li><em>Meerkeuze</em>: je ziet vier antwoordknoppen waarvan er één goed is.</li>
-            <li><em>Open vraag</em>: je typt zelf het antwoord in het vak en bevestigt met OK of Enter.</li>
+            <li><em>Open vraag</em>: je typt zelf het antwoord in en bevestigt met OK of Enter.</li>
           </ul>
         </li>
         <li><strong>Tijd per som</strong>:
@@ -329,10 +508,24 @@
             <li>Zet het vinkje <em>Met tijdsdruk werken</em> aan als je met een echte tijdslimiet wilt oefenen.</li>
           </ul>
         </li>
-        <li><strong>Thema</strong>: kies een witte, zwarte of donkere achtergrond. De tekstkleur past zich automatisch aan.</li>
-        <li><strong>Volgende som</strong>: na een goed antwoord of wanneer de tijd op is, gebruik je de knop <em>Volgende som</em> voor een nieuwe som.</li>
+        <li><strong>Hulp</strong>: met <em>Toon hulp</em> zie je een herhaalde optelling en stippen als ondersteuning.</li>
+        <li><strong>Lettergrootte</strong>: kies normaal of extra groot, bijvoorbeeld voor het digibord of leerlingen met visuele behoefte.</li>
+        <li><strong>Thema</strong>: kies een witte, zwarte, donkere of rustige achtergrond. De tekstkleur past zich automatisch aan.</li>
+        <li><strong>Klaar</strong>: toont een overzicht van je resultaten per tafel met een grafiek en statistieken.</li>
+        <li><strong>Exporteer CSV</strong>: downloadt de resultaten van deze sessie als csv-bestand voor gebruik in bijvoorbeeld Excel.</li>
       </ul>
       <button id="closeHelpButton" class="primary-button" type="button">Sluiten</button>
+    </div>
+  </div>
+
+  <!-- Overzicht-overlay -->
+  <div class="overlay" id="summaryOverlay">
+    <div class="overlay-content">
+      <h2>Overzicht van deze sessie</h2>
+      <div id="summaryContent">
+        <!-- Dynamisch gevuld -->
+      </div>
+      <button id="closeSummaryButton" class="primary-button" type="button">Sluiten</button>
     </div>
   </div>
 
@@ -345,15 +538,27 @@
     const answerInput = document.getElementById('answerInput');
     const submitAnswerButton = document.getElementById('submitAnswerButton');
     const feedback = document.getElementById('feedback');
+    const streakMessage = document.getElementById('streakMessage');
     const timeRemainingSpan = document.getElementById('timeRemaining');
     const timeLimitInput = document.getElementById('timeLimitInput');
     const nextQuestionButton = document.getElementById('nextQuestionButton');
     const tablesList = document.getElementById('tablesList');
     const allTablesCheckbox = document.getElementById('allTablesCheckbox');
     const useTimerCheckbox = document.getElementById('useTimerCheckbox');
+    const showHelpCheckbox = document.getElementById('showHelpCheckbox');
+    const helpContainer = document.getElementById('helpContainer');
+    const helpExpression = document.getElementById('helpExpression');
+    const helpDots = document.getElementById('helpDots');
+
     const helpButton = document.getElementById('helpButton');
     const helpOverlay = document.getElementById('helpOverlay');
     const closeHelpButton = document.getElementById('closeHelpButton');
+
+    const finishButton = document.getElementById('finishButton');
+    const exportCsvButton = document.getElementById('exportCsvButton');
+    const summaryOverlay = document.getElementById('summaryOverlay');
+    const summaryContent = document.getElementById('summaryContent');
+    const closeSummaryButton = document.getElementById('closeSummaryButton');
 
     let currentMultiplier = 2;
     let currentFactor = 1;
@@ -362,6 +567,26 @@
     let timerId = null;
     let timeRemaining = 0;
     let questionActive = false;
+
+    // Voor volgorde (rijtjes vs random)
+    let orderMode = 'random';
+    let seqTableIndex = 0;
+    let seqFactor = 1;
+    let lastSelectedTables = tables.slice();
+
+    // Resultaten per sessie
+    let sessionResults = [];
+    let questionStartTime = 0;
+    let wrongAttemptsCurrent = 0;
+    let streakCount = 0;
+
+    function arraysEqual(a, b) {
+      if (a.length !== b.length) return false;
+      for (let i = 0; i < a.length; i++) {
+        if (a[i] !== b[i]) return false;
+      }
+      return true;
+    }
 
     function initTablesList() {
       tables.forEach(table => {
@@ -375,6 +600,7 @@
           if (checkbox.checked) {
             allTablesCheckbox.checked = false;
           }
+          resetSequentialState();
           generateNewQuestion();
         });
 
@@ -411,6 +637,16 @@
       return 'multiple';
     }
 
+    function getOrderMode() {
+      const radios = document.querySelectorAll('input[name="orderMode"]');
+      for (const r of radios) {
+        if (r.checked) {
+          return r.value;
+        }
+      }
+      return 'random';
+    }
+
     function getTimeLimit() {
       let value = parseInt(timeLimitInput.value, 10);
       if (isNaN(value)) value = 5;
@@ -430,7 +666,6 @@
     function startTimer() {
       clearTimer();
 
-      // Geen tijdsdruk gekozen
       if (!useTimerCheckbox.checked) {
         timeRemainingSpan.textContent = 'geen';
         return;
@@ -461,17 +696,58 @@
       submitAnswerButton.disabled = !active;
     }
 
-    function generateNewQuestion() {
-      clearTimer();
-      feedback.textContent = '';
-      nextQuestionButton.style.display = 'none';
+    function resetSequentialState() {
+      seqTableIndex = 0;
+      seqFactor = 1;
+      lastSelectedTables = getSelectedTables();
+    }
 
-      const selectedTables = getSelectedTables();
+    function generateSequentialQuestion(selectedTables) {
+      if (!arraysEqual(selectedTables, lastSelectedTables)) {
+        lastSelectedTables = selectedTables.slice();
+        seqTableIndex = 0;
+        seqFactor = 1;
+      }
+      if (lastSelectedTables.length === 0) {
+        lastSelectedTables = tables.slice();
+      }
+      currentMultiplier = lastSelectedTables[seqTableIndex];
+      currentFactor = seqFactor;
+
+      seqFactor += 1;
+      if (seqFactor > 10) {
+        seqFactor = 1;
+        seqTableIndex += 1;
+        if (seqTableIndex >= lastSelectedTables.length) {
+          seqTableIndex = 0;
+        }
+      }
+    }
+
+    function generateRandomQuestion(selectedTables) {
       const tableIndex = Math.floor(Math.random() * selectedTables.length);
       currentMultiplier = selectedTables[tableIndex];
       currentFactor = 1 + Math.floor(Math.random() * 10);
-      currentAnswer = currentMultiplier * currentFactor;
+    }
 
+    function generateNewQuestion() {
+      clearTimer();
+      feedback.textContent = '';
+      streakMessage.textContent = '';
+      streakMessage.classList.remove('show');
+      nextQuestionButton.style.display = 'none';
+      wrongAttemptsCurrent = 0;
+
+      const selectedTables = getSelectedTables();
+      orderMode = getOrderMode();
+
+      if (orderMode === 'sequential') {
+        generateSequentialQuestion(selectedTables);
+      } else {
+        generateRandomQuestion(selectedTables);
+      }
+
+      currentAnswer = currentMultiplier * currentFactor;
       questionDisplay.textContent = currentMultiplier + ' × ' + currentFactor + ' =';
 
       currentQuestionType = getQuestionType();
@@ -481,7 +757,10 @@
         showOpenQuestion();
       }
 
+      updateHelpVisual();
+
       setQuestionActive(true);
+      questionStartTime = performance.now();
       startTimer();
     }
 
@@ -529,14 +808,49 @@
       answerInput.focus();
     }
 
+    function recordResult(isCorrect, userAnswer, endedByTime) {
+      const duration = (performance.now() - questionStartTime) / 1000;
+      sessionResults.push({
+        timestamp: new Date().toISOString(),
+        table: currentMultiplier,
+        factor: currentFactor,
+        correct: isCorrect,
+        wrongAttempts: wrongAttemptsCurrent,
+        timeSeconds: duration,
+        questionType: currentQuestionType,
+        endedByTime: !!endedByTime
+      });
+
+      if (isCorrect && !endedByTime) {
+        streakCount += 1;
+        showStreakFeedback();
+      } else {
+        streakCount = 0;
+      }
+    }
+
+    function showStreakFeedback() {
+      if (streakCount > 0 && streakCount % 5 === 0) {
+        const message = 'Geweldig! ' + streakCount + ' keer achter elkaar goed! ⭐';
+        streakMessage.textContent = message;
+        streakMessage.classList.add('show');
+        setTimeout(() => {
+          streakMessage.classList.remove('show');
+        }, 2000);
+      }
+    }
+
     function handleMultipleChoiceAnswer(selectedValue) {
       if (!questionActive) return;
+
       if (selectedValue === currentAnswer) {
         feedback.textContent = 'Juist! Goed gedaan.';
         setQuestionActive(false);
         clearTimer();
+        recordResult(true, selectedValue, false);
         nextQuestionButton.style.display = 'inline-block';
       } else {
+        wrongAttemptsCurrent += 1;
         feedback.textContent = 'Dat is niet juist, probeer het nog een keer.';
       }
     }
@@ -552,8 +866,10 @@
         feedback.textContent = 'Juist! Goed gedaan.';
         setQuestionActive(false);
         clearTimer();
+        recordResult(true, value, false);
         nextQuestionButton.style.display = 'inline-block';
       } else {
+        wrongAttemptsCurrent += 1;
         feedback.textContent = 'Dat is niet juist, probeer het nog een keer.';
       }
     }
@@ -562,7 +878,30 @@
       if (!questionActive) return;
       setQuestionActive(false);
       feedback.textContent = 'De tijd is om. Het juiste antwoord is ' + currentAnswer + '.';
+      recordResult(false, null, true);
       nextQuestionButton.style.display = 'inline-block';
+    }
+
+    function updateHelpVisual() {
+      if (!showHelpCheckbox.checked) {
+        helpContainer.style.display = 'none';
+        return;
+      }
+      helpContainer.style.display = 'block';
+      helpExpression.textContent = currentMultiplier + ' × ' + currentFactor + ' = ' +
+                                   Array(currentMultiplier).fill(currentFactor).join(' + ');
+
+      helpDots.innerHTML = '';
+      for (let i = 0; i < currentMultiplier; i++) {
+        const row = document.createElement('div');
+        row.className = 'help-row';
+        for (let j = 0; j < currentFactor; j++) {
+          const dot = document.createElement('div');
+          dot.className = 'help-dot';
+          row.appendChild(dot);
+        }
+        helpDots.appendChild(row);
+      }
     }
 
     function initThemeSwitcher() {
@@ -576,6 +915,23 @@
               document.body.className = 'theme-dark';
             } else if (r.value === 'dim') {
               document.body.className = 'theme-dim';
+            } else if (r.value === 'calm') {
+              document.body.className = 'theme-calm';
+            }
+          }
+        });
+      });
+    }
+
+    function initFontSizeSwitcher() {
+      const fontRadios = document.querySelectorAll('input[name="fontSize"]');
+      fontRadios.forEach(r => {
+        r.addEventListener('change', () => {
+          if (r.checked) {
+            if (r.value === 'large') {
+              document.body.classList.add('font-large');
+            } else {
+              document.body.classList.remove('font-large');
             }
           }
         });
@@ -596,10 +952,140 @@
       });
     }
 
+    function buildSummary() {
+      if (sessionResults.length === 0) {
+        summaryContent.innerHTML = '<p>Er zijn nog geen resultaten in deze sessie.</p>';
+        return;
+      }
+
+      const statsByTable = {};
+      tables.forEach(t => {
+        statsByTable[t] = {
+          table: t,
+          questions: 0,
+          correct: 0,
+          wrongAttempts: 0,
+          totalTime: 0
+        };
+      });
+
+      sessionResults.forEach(r => {
+        const s = statsByTable[r.table];
+        s.questions += 1;
+        if (r.correct) s.correct += 1;
+        s.wrongAttempts += r.wrongAttempts || 0;
+        s.totalTime += r.timeSeconds || 0;
+      });
+
+      let html = '';
+
+      html += '<h3>Grafiek per tafel (percentage goed)</h3>';
+      html += '<div>';
+      tables.forEach(t => {
+        const s = statsByTable[t];
+        if (s.questions === 0) return;
+        const rate = s.correct / s.questions;
+        const width = Math.round(rate * 100);
+        html += '<div class="summary-bar-row">';
+        html += '<div class="summary-bar-label">Tafel ' + t + '</div>';
+        html += '<div class="summary-bar-track"><div class="summary-bar-fill" style="width:' + width + '%;"></div></div>';
+        html += '<div>' + width + '%</div>';
+        html += '</div>';
+      });
+      html += '</div>';
+
+      html += '<h3>Statistieken per tafel</h3>';
+      html += '<table class="summary-table">';
+      html += '<thead><tr><th>Tafel</th><th>Aantal sommen</th><th>Aantal goed</th><th>Fouten (pogingen)</th><th>Gem. tijd (s)</th></tr></thead><tbody>';
+
+      tables.forEach(t => {
+        const s = statsByTable[t];
+        if (s.questions === 0) return;
+        const avgTime = s.totalTime / s.questions;
+        html += '<tr>';
+        html += '<td>' + t + '</td>';
+        html += '<td>' + s.questions + '</td>';
+        html += '<td>' + s.correct + '</td>';
+        html += '<td>' + s.wrongAttempts + '</td>';
+        html += '<td>' + avgTime.toFixed(1) + '</td>';
+        html += '</tr>';
+      });
+
+      html += '</tbody></table>';
+
+      summaryContent.innerHTML = html;
+    }
+
+    function initSummaryOverlay() {
+      finishButton.addEventListener('click', () => {
+        buildSummary();
+        summaryOverlay.style.display = 'flex';
+      });
+      closeSummaryButton.addEventListener('click', () => {
+        summaryOverlay.style.display = 'none';
+      });
+      summaryOverlay.addEventListener('click', (e) => {
+        if (e.target === summaryOverlay) {
+          summaryOverlay.style.display = 'none';
+        }
+      });
+    }
+
+    function exportCsv() {
+      if (sessionResults.length === 0) {
+        alert('Er zijn nog geen resultaten om te exporteren.');
+        return;
+      }
+      const header = [
+        'timestamp',
+        'table',
+        'factor',
+        'correct',
+        'wrongAttempts',
+        'timeSeconds',
+        'questionType',
+        'endedByTime'
+      ];
+      const lines = [header.join(';')];
+
+      sessionResults.forEach(r => {
+        const row = [
+          r.timestamp,
+          r.table,
+          r.factor,
+          r.correct ? '1' : '0',
+          r.wrongAttempts ?? 0,
+          r.timeSeconds.toFixed(2),
+          r.questionType,
+          r.endedByTime ? '1' : '0'
+        ];
+        lines.push(row.join(';'));
+      });
+
+      const csvContent = lines.join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'tafeltrainer_resultaten.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
     function initEvents() {
       const typeRadios = document.querySelectorAll('input[name="questionType"]');
       typeRadios.forEach(r => {
         r.addEventListener('change', () => {
+          generateNewQuestion();
+        });
+      });
+
+      const orderRadios = document.querySelectorAll('input[name="orderMode"]');
+      orderRadios.forEach(r => {
+        r.addEventListener('change', () => {
+          resetSequentialState();
           generateNewQuestion();
         });
       });
@@ -611,6 +1097,10 @@
 
       useTimerCheckbox.addEventListener('change', () => {
         generateNewQuestion();
+      });
+
+      showHelpCheckbox.addEventListener('change', () => {
+        updateHelpVisual();
       });
 
       submitAnswerButton.addEventListener('click', () => {
@@ -634,14 +1124,21 @@
             cb.checked = false;
           });
         }
+        resetSequentialState();
         generateNewQuestion();
       });
+
+      exportCsvButton.addEventListener('click', exportCsv);
     }
 
+    // Init
     initTablesList();
     initThemeSwitcher();
+    initFontSizeSwitcher();
     initHelpOverlay();
+    initSummaryOverlay();
     initEvents();
+    resetSequentialState();
     generateNewQuestion();
   </script>
 </body>
