@@ -195,7 +195,7 @@
       position: fixed;
       inset: 0;
       background-color: rgba(0,0,0,0.6);
-      display: none;
+      display: none;              /* belangrijk: standaard UIT */
       align-items: center;
       justify-content: center;
       z-index: 1000;
@@ -305,6 +305,7 @@
     </div>
   </div>
 
+  <!-- Uitleg-overlay, nu expliciet standaard verborgen -->
   <div class="overlay" id="helpOverlay">
     <div class="overlay-content">
       <h2>Uitleg tafeltrainer</h2>
@@ -328,318 +329,305 @@
     </div>
   </div>
 
+  <!-- Script bewust helemaal onderaan, na de HTML -->
   <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      const tables = [2, 3, 4, 5, 6, 7, 8, 9, 10];
+    const tables = [2, 3, 4, 5, 6, 7, 8, 9, 10];
 
-      const questionDisplay = document.getElementById('questionDisplay');
-      const multipleChoiceContainer = document.getElementById('multipleChoiceContainer');
-      const openAnswerContainer = document.getElementById('openAnswerContainer');
-      const answerInput = document.getElementById('answerInput');
-      const submitAnswerButton = document.getElementById('submitAnswerButton');
-      const feedback = document.getElementById('feedback');
-      const timeRemainingSpan = document.getElementById('timeRemaining');
-      const timeLimitInput = document.getElementById('timeLimitInput');
-      const nextQuestionButton = document.getElementById('nextQuestionButton');
-      const tablesList = document.getElementById('tablesList');
-      const allTablesCheckbox = document.getElementById('allTablesCheckbox');
-      const helpButton = document.getElementById('helpButton');
-      const helpOverlay = document.getElementById('helpOverlay');
-      const closeHelpButton = document.getElementById('closeHelpButton');
+    const questionDisplay = document.getElementById('questionDisplay');
+    const multipleChoiceContainer = document.getElementById('multipleChoiceContainer');
+    const openAnswerContainer = document.getElementById('openAnswerContainer');
+    const answerInput = document.getElementById('answerInput');
+    const submitAnswerButton = document.getElementById('submitAnswerButton');
+    const feedback = document.getElementById('feedback');
+    const timeRemainingSpan = document.getElementById('timeRemaining');
+    const timeLimitInput = document.getElementById('timeLimitInput');
+    const nextQuestionButton = document.getElementById('nextQuestionButton');
+    const tablesList = document.getElementById('tablesList');
+    const allTablesCheckbox = document.getElementById('allTablesCheckbox');
+    const helpButton = document.getElementById('helpButton');
+    const helpOverlay = document.getElementById('helpOverlay');
+    const closeHelpButton = document.getElementById('closeHelpButton');
 
-      let currentMultiplier = 2;
-      let currentFactor = 1;
-      let currentAnswer = 0;
-      let currentQuestionType = 'multiple';
-      let timerId = null;
-      let timeRemaining = 0;
-      let questionActive = false;
+    let currentMultiplier = 2;
+    let currentFactor = 1;
+    let currentAnswer = 0;
+    let currentQuestionType = 'multiple';
+    let timerId = null;
+    let timeRemaining = 0;
+    let questionActive = false;
 
-      function initTablesList() {
-        tables.forEach(table => {
-          const label = document.createElement('label');
-          const checkbox = document.createElement('input');
-          checkbox.type = 'checkbox';
-          checkbox.value = String(table);
-          checkbox.checked = false;
+    function initTablesList() {
+      tables.forEach(table => {
+        const label = document.createElement('label');
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.value = String(table);
+        checkbox.checked = false; // basis: uit
 
-          checkbox.addEventListener('change', () => {
-            if (checkbox.checked) {
-              // Specifieke tafel gekozen, dus Alle tafels uit
-              allTablesCheckbox.checked = false;
-            }
-          });
-
-          label.appendChild(checkbox);
-          label.appendChild(document.createTextNode(' ' + table));
-          tablesList.appendChild(label);
-        });
-      }
-
-      function getSelectedTables() {
-        if (allTablesCheckbox.checked) {
-          return [...tables];
-        }
-        const selected = [];
-        const checkboxes = tablesList.querySelectorAll('input[type="checkbox"]');
-        checkboxes.forEach(cb => {
-          if (cb.checked) {
-            selected.push(Number(cb.value));
+        checkbox.addEventListener('change', () => {
+          if (checkbox.checked) {
+            // Specifieke tafel aangevinkt, dan Alle tafels uit
+            allTablesCheckbox.checked = false;
           }
+          generateNewQuestion();
         });
-        if (selected.length === 0) {
-          // Fallback: als niets is geselecteerd, gebruik alle tafels
-          return [...tables];
+
+        label.appendChild(checkbox);
+        label.appendChild(document.createTextNode(' ' + table));
+        tablesList.appendChild(label);
+      });
+    }
+
+    function getSelectedTables() {
+      if (allTablesCheckbox.checked) {
+        return [...tables];
+      }
+      const selected = [];
+      const checkboxes = tablesList.querySelectorAll('input[type="checkbox"]');
+      checkboxes.forEach(cb => {
+        if (cb.checked) {
+          selected.push(Number(cb.value));
         }
-        return selected;
+      });
+      if (selected.length === 0) {
+        // fallback: als niets is aangevinkt, toch alle tafels gebruiken
+        return [...tables];
       }
+      return selected;
+    }
 
-      function getQuestionType() {
-        const radios = document.querySelectorAll('input[name="questionType"]');
-        for (const r of radios) {
-          if (r.checked) {
-            return r.value;
-          }
-        }
-        return 'multiple';
-      }
-
-      function getTimeLimit() {
-        let value = parseInt(timeLimitInput.value, 10);
-        if (isNaN(value)) value = 5;
-        if (value < 1) value = 1;
-        if (value > 10) value = 10;
-        timeLimitInput.value = value;
-        return value;
-      }
-
-      function clearTimer() {
-        if (timerId !== null) {
-          clearInterval(timerId);
-          timerId = null;
+    function getQuestionType() {
+      const radios = document.querySelectorAll('input[name="questionType"]');
+      for (const r of radios) {
+        if (r.checked) {
+          return r.value;
         }
       }
+      return 'multiple';
+    }
 
-      function startTimer() {
-        clearTimer();
-        timeRemaining = getTimeLimit();
+    function getTimeLimit() {
+      let value = parseInt(timeLimitInput.value, 10);
+      if (isNaN(value)) value = 5;
+      if (value < 1) value = 1;
+      if (value > 10) value = 10;
+      timeLimitInput.value = value;
+      return value;
+    }
+
+    function clearTimer() {
+      if (timerId !== null) {
+        clearInterval(timerId);
+        timerId = null;
+      }
+    }
+
+    function startTimer() {
+      clearTimer();
+      timeRemaining = getTimeLimit();
+      timeRemainingSpan.textContent = timeRemaining;
+      timerId = setInterval(() => {
+        timeRemaining -= 1;
+        if (timeRemaining < 0) {
+          timeRemaining = 0;
+        }
         timeRemainingSpan.textContent = timeRemaining;
-        timerId = setInterval(() => {
-          timeRemaining -= 1;
-          if (timeRemaining < 0) {
-            timeRemaining = 0;
-          }
-          timeRemainingSpan.textContent = timeRemaining;
-          if (timeRemaining <= 0) {
-            clearTimer();
-            handleTimeUp();
-          }
-        }, 1000);
-      }
-
-      function setQuestionActive(active) {
-        questionActive = active;
-
-        const buttons = multipleChoiceContainer.querySelectorAll('button');
-        buttons.forEach(btn => {
-          btn.disabled = !active;
-        });
-
-        if (answerInput) {
-          answerInput.disabled = !active;
-        }
-        if (submitAnswerButton) {
-          submitAnswerButton.disabled = !active;
-        }
-      }
-
-      function generateNewQuestion() {
-        clearTimer();
-        feedback.textContent = '';
-        nextQuestionButton.style.display = 'none';
-
-        const selectedTables = getSelectedTables();
-        const tableIndex = Math.floor(Math.random() * selectedTables.length);
-        currentMultiplier = selectedTables[tableIndex];
-        currentFactor = 1 + Math.floor(Math.random() * 10);
-        currentAnswer = currentMultiplier * currentFactor;
-
-        questionDisplay.textContent = currentMultiplier + ' × ' + currentFactor + ' =';
-
-        currentQuestionType = getQuestionType();
-        if (currentQuestionType === 'multiple') {
-          showMultipleChoice();
-        } else {
-          showOpenQuestion();
-        }
-
-        setQuestionActive(true);
-        startTimer();
-      }
-
-      function showMultipleChoice() {
-        multipleChoiceContainer.style.display = 'flex';
-        openAnswerContainer.style.display = 'none';
-        multipleChoiceContainer.innerHTML = '';
-
-        const answersSet = new Set();
-        answersSet.add(currentAnswer);
-
-        while (answersSet.size < 4) {
-          const deltaOptions = [-3, -2, -1, 1, 2, 3];
-          const delta = deltaOptions[Math.floor(Math.random() * deltaOptions.length)];
-          const candidate = currentAnswer + delta;
-          if (candidate > 0) {
-            answersSet.add(candidate);
-          }
-        }
-
-        const answers = Array.from(answersSet);
-        for (let i = answers.length - 1; i > 0; i++) {
-          const j = Math.floor(Math.random() * (i + 1));
-          const temp = answers[i];
-          answers[i] = answers[j];
-          answers[j] = temp;
-        }
-
-        answers.forEach(value => {
-          const button = document.createElement('button');
-          button.className = 'option-button';
-          button.textContent = value;
-          button.addEventListener('click', () => {
-            if (!questionActive) return;
-            handleMultipleChoiceAnswer(value);
-          });
-          multipleChoiceContainer.appendChild(button);
-        });
-      }
-
-      function showOpenQuestion() {
-        multipleChoiceContainer.style.display = 'none';
-        openAnswerContainer.style.display = 'flex';
-        answerInput.value = '';
-        answerInput.focus();
-      }
-
-      function handleMultipleChoiceAnswer(selectedValue) {
-        if (!questionActive) return;
-        if (selectedValue === currentAnswer) {
-          feedback.textContent = 'Juist! Goed gedaan.';
-          setQuestionActive(false);
+        if (timeRemaining <= 0) {
           clearTimer();
-          nextQuestionButton.style.display = 'inline-block';
-        } else {
-          feedback.textContent = 'Dat is niet juist, probeer het nog een keer.';
+          handleTimeUp();
+        }
+      }, 1000);
+    }
+
+    function setQuestionActive(active) {
+      questionActive = active;
+      const buttons = multipleChoiceContainer.querySelectorAll('button');
+      buttons.forEach(btn => {
+        btn.disabled = !active;
+      });
+      answerInput.disabled = !active;
+      submitAnswerButton.disabled = !active;
+    }
+
+    function generateNewQuestion() {
+      clearTimer();
+      feedback.textContent = '';
+      nextQuestionButton.style.display = 'none';
+
+      const selectedTables = getSelectedTables();
+      const tableIndex = Math.floor(Math.random() * selectedTables.length);
+      currentMultiplier = selectedTables[tableIndex];
+      currentFactor = 1 + Math.floor(Math.random() * 10);
+      currentAnswer = currentMultiplier * currentFactor;
+
+      questionDisplay.textContent = currentMultiplier + ' × ' + currentFactor + ' =';
+
+      currentQuestionType = getQuestionType();
+      if (currentQuestionType === 'multiple') {
+        showMultipleChoice();
+      } else {
+        showOpenQuestion();
+      }
+
+      setQuestionActive(true);
+      startTimer();
+    }
+
+    function showMultipleChoice() {
+      multipleChoiceContainer.style.display = 'flex';
+      openAnswerContainer.style.display = 'none';
+      multipleChoiceContainer.innerHTML = '';
+
+      const answersSet = new Set();
+      answersSet.add(currentAnswer);
+
+      while (answersSet.size < 4) {
+        const deltaOptions = [-3, -2, -1, 1, 2, 3];
+        const delta = deltaOptions[Math.floor(Math.random() * deltaOptions.length)];
+        const candidate = currentAnswer + delta;
+        if (candidate > 0) {
+          answersSet.add(candidate);
         }
       }
 
-      function handleOpenAnswerSubmit() {
-        if (!questionActive) return;
-        const value = parseInt(answerInput.value, 10);
-        if (isNaN(value)) {
-          feedback.textContent = 'Vul een getal in.';
-          return;
-        }
-        if (value === currentAnswer) {
-          feedback.textContent = 'Juist! Goed gedaan.';
-          setQuestionActive(false);
-          clearTimer();
-          nextQuestionButton.style.display = 'inline-block';
-        } else {
-          feedback.textContent = 'Dat is niet juist, probeer het nog een keer.';
-        }
+      const answers = Array.from(answersSet);
+      for (let i = answers.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const temp = answers[i];
+        answers[i] = answers[j];
+        answers[j] = temp;
       }
 
-      function handleTimeUp() {
-        if (!questionActive) return;
+      answers.forEach(value => {
+        const button = document.createElement('button');
+        button.className = 'option-button';
+        button.textContent = value;
+        button.addEventListener('click', () => {
+          if (!questionActive) return;
+          handleMultipleChoiceAnswer(value);
+        });
+        multipleChoiceContainer.appendChild(button);
+      });
+    }
+
+    function showOpenQuestion() {
+      multipleChoiceContainer.style.display = 'none';
+      openAnswerContainer.style.display = 'flex';
+      answerInput.value = '';
+      answerInput.focus();
+    }
+
+    function handleMultipleChoiceAnswer(selectedValue) {
+      if (!questionActive) return;
+      if (selectedValue === currentAnswer) {
+        feedback.textContent = 'Juist! Goed gedaan.';
         setQuestionActive(false);
-        feedback.textContent = 'De tijd is om. Het juiste antwoord is ' + currentAnswer + '.';
+        clearTimer();
         nextQuestionButton.style.display = 'inline-block';
+      } else {
+        feedback.textContent = 'Dat is niet juist, probeer het nog een keer.';
       }
+    }
 
-      function initThemeSwitcher() {
-        const themeRadios = document.querySelectorAll('input[name="theme"]');
-        themeRadios.forEach(r => {
-          r.addEventListener('change', () => {
-            if (r.checked) {
-              if (r.value === 'light') {
-                document.body.className = 'theme-light';
-              } else if (r.value === 'dark') {
-                document.body.className = 'theme-dark';
-              } else if (r.value === 'dim') {
-                document.body.className = 'theme-dim';
-              }
+    function handleOpenAnswerSubmit() {
+      if (!questionActive) return;
+      const value = parseInt(answerInput.value, 10);
+      if (isNaN(value)) {
+        feedback.textContent = 'Vul een getal in.';
+        return;
+      }
+      if (value === currentAnswer) {
+        feedback.textContent = 'Juist! Goed gedaan.';
+        setQuestionActive(false);
+        clearTimer();
+        nextQuestionButton.style.display = 'inline-block';
+      } else {
+        feedback.textContent = 'Dat is niet juist, probeer het nog een keer.';
+      }
+    }
+
+    function handleTimeUp() {
+      if (!questionActive) return;
+      setQuestionActive(false);
+      feedback.textContent = 'De tijd is om. Het juiste antwoord is ' + currentAnswer + '.';
+      nextQuestionButton.style.display = 'inline-block';
+    }
+
+    function initThemeSwitcher() {
+      const themeRadios = document.querySelectorAll('input[name="theme"]');
+      themeRadios.forEach(r => {
+        r.addEventListener('change', () => {
+          if (r.checked) {
+            if (r.value === 'light') {
+              document.body.className = 'theme-light';
+            } else if (r.value === 'dark') {
+              document.body.className = 'theme-dark';
+            } else if (r.value === 'dim') {
+              document.body.className = 'theme-dim';
             }
-          });
+          }
         });
-      }
+      });
+    }
 
-      function initHelpOverlay() {
-        helpButton.addEventListener('click', () => {
-          helpOverlay.style.display = 'flex';
-        });
-        closeHelpButton.addEventListener('click', () => {
+    function initHelpOverlay() {
+      helpButton.addEventListener('click', () => {
+        helpOverlay.style.display = 'flex';
+      });
+      closeHelpButton.addEventListener('click', () => {
+        helpOverlay.style.display = 'none';
+      });
+      helpOverlay.addEventListener('click', (e) => {
+        if (e.target === helpOverlay) {
           helpOverlay.style.display = 'none';
-        });
-        helpOverlay.addEventListener('click', (e) => {
-          if (e.target === helpOverlay) {
-            helpOverlay.style.display = 'none';
-          }
-        });
-      }
+        }
+      });
+    }
 
-      function initEvents() {
-        const typeRadios = document.querySelectorAll('input[name="questionType"]');
-        typeRadios.forEach(r => {
-          r.addEventListener('change', () => {
-            generateNewQuestion();
-          });
+    function initEvents() {
+      const typeRadios = document.querySelectorAll('input[name="questionType"]');
+      typeRadios.forEach(r => {
+        r.addEventListener('change', () => {
+          generateNewQuestion();
         });
+      });
 
-        timeLimitInput.addEventListener('change', () => {
-          getTimeLimit();
-        });
+      timeLimitInput.addEventListener('change', () => {
+        getTimeLimit();
+      });
 
-        submitAnswerButton.addEventListener('click', () => {
+      submitAnswerButton.addEventListener('click', () => {
+        handleOpenAnswerSubmit();
+      });
+
+      answerInput.addEventListener('keyup', (e) => {
+        if (e.key === 'Enter') {
           handleOpenAnswerSubmit();
-        });
+        }
+      });
 
-        answerInput.addEventListener('keyup', (e) => {
-          if (e.key === 'Enter') {
-            handleOpenAnswerSubmit();
-          }
-        });
-
-        nextQuestionButton.addEventListener('click', () => {
-          generateNewQuestion();
-        });
-
-        allTablesCheckbox.addEventListener('change', () => {
-          if (allTablesCheckbox.checked) {
-            // Alle tafels gekozen, dus alle losse tafels uit
-            const checkboxes = tablesList.querySelectorAll('input[type="checkbox"]');
-            checkboxes.forEach(cb => {
-              cb.checked = false;
-            });
-          }
-          generateNewQuestion();
-        });
-
-        tablesList.addEventListener('change', () => {
-          generateNewQuestion();
-        });
-      }
-
-      function init() {
-        initTablesList();
-        initThemeSwitcher();
-        initHelpOverlay();
-        initEvents();
+      nextQuestionButton.addEventListener('click', () => {
         generateNewQuestion();
-      }
+      });
 
-      init();
-    });
+      allTablesCheckbox.addEventListener('change', () => {
+        if (allTablesCheckbox.checked) {
+          // Alle tafels gekozen, losse tafels uit
+          const checkboxes = tablesList.querySelectorAll('input[type="checkbox"]');
+          checkboxes.forEach(cb => {
+            cb.checked = false;
+          });
+        }
+        generateNewQuestion();
+      });
+    }
+
+    // Init direct, script staat onderaan dus DOM is klaar
+    initTablesList();
+    initThemeSwitcher();
+    initHelpOverlay();
+    initEvents();
+    generateNewQuestion();
   </script>
 </body>
 </html>
