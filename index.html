@@ -4,8 +4,11 @@
   <meta charset="UTF-8">
   <title>Tafeltrainer</title>
   <style>
-    body {
+    html, body {
       margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden; /* geen scrollbalken, alles schaalt mee */
       font-family: Arial, sans-serif;
     }
 
@@ -29,6 +32,17 @@
       color: #222222;
     }
 
+    /* Schaal-wrapper: dit “canvas” wordt proportioneel geschaald */
+    #scaleWrapper {
+      position: absolute;
+      top: 0;
+      left: 0;
+      transform-origin: top left;
+      /* basisontwerp-grootte (in px) */
+      width: 1400px;
+      height: 900px;
+    }
+
     .header {
       text-align: center;
       font-size: 3.5rem;
@@ -38,7 +52,8 @@
 
     .app-container {
       display: flex;
-      min-height: 100vh;
+      width: 100%;
+      height: 100%;
     }
 
     .main-area {
@@ -68,10 +83,10 @@
       font-size: 10rem;
     }
 
-    /* Zandloper: iets verder naar rechts, dichter bij menu, weg van antwoorden */
+    /* Zandloper: gepositioneerd net links van het menu (290px breed) */
     .hourglass-container {
       position: absolute;
-      right: 290px;        /* uitlijning net links van het menu (290px breed) */
+      right: 290px;
       top: 60%;
       transform: translateY(-50%);
       width: 160px;
@@ -373,187 +388,190 @@
   </style>
 </head>
 <body class="theme-light">
-  <div class="app-container">
-    <div class="main-area">
-      <div class="header">Tafeltrainer</div>
+  <!-- Schaalbare “canvas” -->
+  <div id="scaleWrapper">
+    <div class="app-container">
+      <div class="main-area">
+        <div class="header">Tafeltrainer</div>
 
-      <div class="question-row">
-        <div class="question" id="questionDisplay">3 × 4 =</div>
-      </div>
-
-      <div class="timer" id="timerContainer" style="display: none;">
-        Tijd over: <span id="timeRemaining"></span> seconden
-      </div>
-
-      <div class="help-visual" id="helpContainer" style="display: none;">
-        <div class="help-visual-expression" id="helpExpression"></div>
-        <div class="help-dots" id="helpDots"></div>
-      </div>
-
-      <div class="options-container" id="multipleChoiceContainer" style="display: none;"></div>
-
-      <div class="answer-area" id="openAnswerContainer" style="display: none;">
-        <input type="number" id="answerInput" class="answer-input" placeholder="Antwoord">
-        <button id="submitAnswerButton" class="primary-button">OK</button>
-      </div>
-
-      <div class="feedback" id="feedback"></div>
-      <div class="streak-message" id="streakMessage"></div>
-
-      <button id="nextQuestionButton" class="next-button" style="display: none;">Volgende som</button>
-      <button id="finishButton" class="primary-button" type="button" style="margin-top: 10px;">Klaar</button>
-
-      <div class="hourglass-container" id="hourglassContainer">
-        <svg id="hourglassSvg" class="hourglass-svg" viewBox="0 0 80 180">
-          <defs>
-            <clipPath id="topClip">
-              <polygon points="10,10 70,10 40,90" />
-            </clipPath>
-            <clipPath id="bottomClip">
-              <polygon points="10,170 70,170 40,90" />
-            </clipPath>
-          </defs>
-
-          <g stroke="#555" stroke-width="3" fill="none">
-            <rect x="15" y="5" width="50" height="10" rx="3" ry="3" fill="#ddd" />
-            <rect x="15" y="165" width="50" height="10" rx="3" ry="3" fill="#ddd" />
-            <line x1="20" y1="15" x2="35" y2="75" />
-            <line x1="60" y1="15" x2="45" y2="75" />
-            <line x1="35" y1="105" x2="20" y2="165" />
-            <line x1="45" y1="105" x2="60" y2="165" />
-            <line x1="35" y1="90" x2="45" y2="90" />
-          </g>
-
-          <rect id="topSand" x="10" y="10" width="60" height="80"
-                clip-path="url(#topClip)" fill="#e0c070" />
-          <rect id="bottomSand" x="10" y="170" width="60" height="0"
-                clip-path="url(#bottomClip)" fill="#e0c070" />
-        </svg>
-      </div>
-    </div>
-
-    <div class="menu">
-      <div>
-        <div class="menu-section-title">Kies tafels</div>
-        <div class="inline-options">
-          <label>
-            <input type="checkbox" id="allTablesCheckbox" checked>
-            Alle tafels (2 t/m 10)
-          </label>
+        <div class="question-row">
+          <div class="question" id="questionDisplay">3 × 4 =</div>
         </div>
-        <div class="tables-list" id="tablesList"></div>
-      </div>
 
-      <div>
-        <div class="menu-section-title">Volgorde</div>
-        <div class="inline-options">
-          <label>
-            <input type="radio" name="orderMode" value="random" checked>
-            Door elkaar
-          </label>
-          <label>
-            <input type="radio" name="orderMode" value="sequential">
-            Rijtjes
-          </label>
+        <div class="timer" id="timerContainer" style="display: none;">
+          Tijd over: <span id="timeRemaining"></span> seconden
+        </div>
+
+        <div class="help-visual" id="helpContainer" style="display: none;">
+          <div class="help-visual-expression" id="helpExpression"></div>
+          <div class="help-dots" id="helpDots"></div>
+        </div>
+
+        <div class="options-container" id="multipleChoiceContainer" style="display: none;"></div>
+
+        <div class="answer-area" id="openAnswerContainer" style="display: none;">
+          <input type="number" id="answerInput" class="answer-input" placeholder="Antwoord">
+          <button id="submitAnswerButton" class="primary-button">OK</button>
+        </div>
+
+        <div class="feedback" id="feedback"></div>
+        <div class="streak-message" id="streakMessage"></div>
+
+        <button id="nextQuestionButton" class="next-button" style="display: none;">Volgende som</button>
+        <button id="finishButton" class="primary-button" type="button" style="margin-top: 10px;">Klaar</button>
+
+        <div class="hourglass-container" id="hourglassContainer">
+          <svg id="hourglassSvg" class="hourglass-svg" viewBox="0 0 80 180">
+            <defs>
+              <clipPath id="topClip">
+                <polygon points="10,10 70,10 40,90" />
+              </clipPath>
+              <clipPath id="bottomClip">
+                <polygon points="10,170 70,170 40,90" />
+              </clipPath>
+            </defs>
+
+            <g stroke="#555" stroke-width="3" fill="none">
+              <rect x="15" y="5" width="50" height="10" rx="3" ry="3" fill="#ddd" />
+              <rect x="15" y="165" width="50" height="10" rx="3" ry="3" fill="#ddd" />
+              <line x1="20" y1="15" x2="35" y2="75" />
+              <line x1="60" y1="15" x2="45" y2="75" />
+              <line x1="35" y1="105" x2="20" y2="165" />
+              <line x1="45" y1="105" x2="60" y2="165" />
+              <line x1="35" y1="90" x2="45" y2="90" />
+            </g>
+
+            <rect id="topSand" x="10" y="10" width="60" height="80"
+                  clip-path="url(#topClip)" fill="#e0c070" />
+            <rect id="bottomSand" x="10" y="170" width="60" height="0"
+                  clip-path="url(#bottomClip)" fill="#e0c070" />
+          </svg>
         </div>
       </div>
 
-      <div>
-        <div class="menu-section-title">Vraagtype</div>
-        <div class="inline-options">
-          <label>
-            <input type="radio" name="questionType" value="multiple" checked>
-            Meerkeuze
-          </label>
-          <label>
-            <input type="radio" name="questionType" value="open">
-            Open vraag
-          </label>
-        </div>
-      </div>
-
-      <div>
-        <div class="menu-section-title">Tijd per som (seconden)</div>
+      <div class="menu">
         <div>
-          <input type="number" id="timeLimitInput" class="time-input" min="1" max="10" value="5">
-          <span>(1 tot 10)</span>
+          <div class="menu-section-title">Kies tafels</div>
+          <div class="inline-options">
+            <label>
+              <input type="checkbox" id="allTablesCheckbox" checked>
+              Alle tafels (2 t/m 10)
+            </label>
+          </div>
+          <div class="tables-list" id="tablesList"></div>
         </div>
-        <div class="inline-options" style="margin-top: 6px;">
-          <label>
-            <input type="checkbox" id="useTimerCheckbox">
-            Met tijdsdruk werken
-          </label>
-        </div>
-      </div>
 
-      <div id="hourglassMenuSection" style="display: none;">
-        <div class="menu-section-title">Zandloper</div>
+        <div>
+          <div class="menu-section-title">Volgorde</div>
+          <div class="inline-options">
+            <label>
+              <input type="radio" name="orderMode" value="random" checked>
+              Door elkaar
+            </label>
+            <label>
+              <input type="radio" name="orderMode" value="sequential">
+              Rijtjes
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <div class="menu-section-title">Vraagtype</div>
+          <div class="inline-options">
+            <label>
+              <input type="radio" name="questionType" value="multiple" checked>
+              Meerkeuze
+            </label>
+            <label>
+              <input type="radio" name="questionType" value="open">
+              Open vraag
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <div class="menu-section-title">Tijd per som (seconden)</div>
+          <div>
+            <input type="number" id="timeLimitInput" class="time-input" min="1" max="10" value="5">
+            <span>(1 tot 10)</span>
+          </div>
+          <div class="inline-options" style="margin-top: 6px;">
+            <label>
+              <input type="checkbox" id="useTimerCheckbox">
+              Met tijdsdruk werken
+            </label>
+          </div>
+        </div>
+
+        <div id="hourglassMenuSection" style="display: none;">
+          <div class="menu-section-title">Zandloper</div>
+          <div class="inline-options">
+            <label>
+              <input type="checkbox" id="showHourglassCheckbox" checked>
+              Zandloper tonen
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <div class="menu-section-title">Hulp</div>
+          <div class="inline-options">
+            <label>
+              <input type="checkbox" id="showHelpCheckbox">
+              Toon hulp
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <div class="menu-section-title">Lettergrootte</div>
+          <div class="inline-options">
+            <label>
+              <input type="radio" name="fontSize" value="normal" checked>
+              Normaal
+            </label>
+            <label>
+              <input type="radio" name="fontSize" value="large">
+              Groot
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <div class="menu-section-title">Thema</div>
+          <div class="inline-options">
+            <label>
+              <input type="radio" name="theme" value="light" checked>
+              Wit
+            </label>
+            <label>
+              <input type="radio" name="theme" value="dark">
+              Zwart
+            </label>
+            <label>
+              <input type="radio" name="theme" value="dim">
+              Donker
+            </label>
+            <label>
+              <input type="radio" name="theme" value="calm">
+              Rustig
+            </label>
+          </div>
+        </div>
+
         <div class="inline-options">
-          <label>
-            <input type="checkbox" id="showHourglassCheckbox" checked>
-            Zandloper tonen
-          </label>
+          <button id="helpButton" class="primary-button" type="button">Uitleg</button>
+          <button id="exportCsvButton" class="primary-button" type="button">Exporteer CSV</button>
         </div>
-      </div>
 
-      <div>
-        <div class="menu-section-title">Hulp</div>
-        <div class="inline-options">
-          <label>
-            <input type="checkbox" id="showHelpCheckbox">
-            Toon hulp
-          </label>
+        <div class="footer">
+          Gemaakt door <a href="https://www.edubolt.nl/" target="_blank" rel="noopener noreferrer">EduBOLT</a>
         </div>
-      </div>
-
-      <div>
-        <div class="menu-section-title">Lettergrootte</div>
-        <div class="inline-options">
-          <label>
-            <input type="radio" name="fontSize" value="normal" checked>
-            Normaal
-          </label>
-          <label>
-            <input type="radio" name="fontSize" value="large">
-            Groot
-          </label>
-        </div>
-      </div>
-
-      <div>
-        <div class="menu-section-title">Thema</div>
-        <div class="inline-options">
-          <label>
-            <input type="radio" name="theme" value="light" checked>
-            Wit
-          </label>
-          <label>
-            <input type="radio" name="theme" value="dark">
-            Zwart
-          </label>
-          <label>
-            <input type="radio" name="theme" value="dim">
-            Donker
-          </label>
-          <label>
-            <input type="radio" name="theme" value="calm">
-            Rustig
-          </label>
-        </div>
-      </div>
-
-      <div class="inline-options">
-        <button id="helpButton" class="primary-button" type="button">Uitleg</button>
-        <button id="exportCsvButton" class="primary-button" type="button">Exporteer CSV</button>
-      </div>
-
-      <div class="footer">
-        Gemaakt door <a href="https://www.edubolt.nl/" target="_blank" rel="noopener noreferrer">EduBOLT</a>
       </div>
     </div>
   </div>
 
-  <!-- Naam-beginscherm -->
+  <!-- Naam-beginscherm (overlay, niet geschaald) -->
   <div class="overlay" id="nameOverlay" style="display: flex;">
     <div class="overlay-content">
       <h2>Welkom bij de Tafeltrainer</h2>
@@ -1101,6 +1119,7 @@
         row.className = 'help-row';
         for (let j = 0; j < currentFactor; j++) {
           const dot = document.createElement('div');
+          dot.className = 'help-dot';
           row.appendChild(dot);
         }
         helpDots.appendChild(row);
@@ -1370,6 +1389,21 @@
       });
     }
 
+    /* Schaalfunctie: zorgt dat #scaleWrapper altijd volledig in beeld past */
+    function applyScale() {
+      const designWidth = 1400;
+      const designHeight = 900;
+      const wrapper = document.getElementById('scaleWrapper');
+
+      const scaleX = window.innerWidth / designWidth;
+      const scaleY = window.innerHeight / designHeight;
+      const scale = Math.min(scaleX, scaleY);
+
+      wrapper.style.transform = 'scale(' + scale + ')';
+    }
+
+    window.addEventListener('resize', applyScale);
+
     // Init
     initTablesList();
     initThemeSwitcher();
@@ -1378,6 +1412,7 @@
     initSummaryOverlay();
     initEvents();
     resetSequentialState();
+    applyScale();        // eerste schaal
     studentNameInput.focus();
   </script>
 </body>
